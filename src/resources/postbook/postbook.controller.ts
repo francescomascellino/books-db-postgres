@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
 
 @Controller('postbooks')

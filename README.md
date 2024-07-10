@@ -2328,3 +2328,48 @@ library=# SELECT title  FROM pbook WHERE id=1;
  Il nome della rosa
 (1 row)
 ```
+
+Aggiungiamo il metodo update
+***src\resources\postbook\postbook.service.ts***
+```ts
+async update(
+    id: number,
+    updatePostbookDto: UpdatePostbookDto,
+  ): Promise<Postbook> {
+    // Cerchiamo il Libro da aggiornare
+    const recordToUpdate = await this.postbookRepository.findOne({
+      where: { id },
+    });
+
+    if (!recordToUpdate) {
+      throw new NotFoundException(`Book with id ${id} not found`);
+    }
+
+    console.log(`Found "${recordToUpdate.title}"`);
+
+    // Copiamo i dati del DTO in recordToUpdate
+    Object.assign(recordToUpdate, updatePostbookDto);
+
+    // Salviamo il record
+    this.postbookRepository.save(recordToUpdate);
+
+    console.log(
+      `Book "${recordToUpdate.title}" updated at ${recordToUpdate.updated_at}`,
+    );
+
+    return recordToUpdate;
+}
+```
+
+***src\resources\postbook\postbook.controller.ts***
+```ts
+@Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() UpdatePostbookDto: UpdatePostbookDto,
+  ): Promise<Postbook> {
+    console.log(`Updating Book with id ${id}`);
+    return this.postbookService.update(Number(id), UpdatePostbookDto);
+}
+```
+
