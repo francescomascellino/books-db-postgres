@@ -1,4 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
 export class Postbook {
@@ -11,7 +16,7 @@ export class Postbook {
   @Column({ length: 50 })
   author: string;
 
-  @Column({ length: 13 })
+  @Column({ length: 13, unique: true })
   ISBN: string;
 
   @Column({ default: false })
@@ -22,4 +27,7 @@ export class Postbook {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }) // Esempio di colonna timestamp con valore di default corrente
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

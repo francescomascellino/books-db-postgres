@@ -2123,7 +2123,7 @@ export class Postbook {
   @Column({ length: 50 })
   author: string;
 
-  @Column({ length: 13 })
+  @Column({ length: 13, unique: true })
   ISBN: string;
 
   @Column({ default: false })
@@ -2216,8 +2216,18 @@ export class PostbookService {
     return this.postbookRepository.save(newPostbook);
   }
 
-  findOne(id: number): Promise<Postbook> {
-    return this.postbookRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<Postbook> {
+    console.log(`Finding Book with id ${id}`);
+
+    const book = await this.postbookRepository.findOne({ where: { id } });
+
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    console.log(`Book found: "${book.title}"`);
+
+    return book;
   }
 }
 ```
