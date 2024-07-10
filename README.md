@@ -2131,6 +2131,9 @@ export class Postbook {
 
   @Column({ nullable: true })
   loaned_to: number | null;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }) // Esempio di colonna timestamp con valore di default corrente
+  created_at: Date;
 }
 ```
 
