@@ -2024,6 +2024,8 @@ export class BookController {
 ```
 
 ## PostGres
+Basic tutorial:
+https://medium.com/simform-engineering/nestjs-and-postgresql-a-crud-tutorial-32aa78778752
 
 Installare pacchetty TypeORM se non installati e POstgreSQL
 ```bash
