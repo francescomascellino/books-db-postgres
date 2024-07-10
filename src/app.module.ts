@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PostbookModule } from './resources/postbook/postbook.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BookModule } from './resources/book/book.module';
 import { UserModule } from './resources/user/user.module';
 import { AuthModule } from './resources/auth/auth.module';
+import { PostbookModule } from './resources/postbook/postbook.module';
+import { Postbook } from './resources/postbook/entities/postbook.entity';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { AuthModule } from './resources/auth/auth.module';
         username: configService.get<string>('POSTGRES_USER'),
         password: configService.get<string>('POSTGRES_PASSWORD'),
         database: configService.get<string>('POSTGRES_DB'),
-        entities: [__dirname + '/**/*.entity{.ts}'],
+        entities: [Postbook],
         synchronize: true,
       }),
       inject: [ConfigService],

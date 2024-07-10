@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('post_book')
-export class PostBook {
+@Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
+export class Postbook {
   @PrimaryGeneratedColumn()
   id: number;
 

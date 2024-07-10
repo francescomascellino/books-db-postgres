@@ -2046,7 +2046,7 @@ POSTGRES_DB=[DB NAME]
 
 Creiamo le risorse per l'enità libro resplicata in PostgreSQL
 ```bash
-nest g resource postbook
+nest g resource resources/postbook
 ```
 
 Aggiungiamo la configurazione del database Postgres in app.module
@@ -2108,12 +2108,12 @@ export class AppModule {}
 ```
 
 Definiamo l'entità postbook
-***src\postbook\entities\postbook.entity.ts***
+***src\resources\postbook\entities\postbook.entity.ts***
 ```ts
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('post_book')
-export class PostBook {
+@Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
+export class Postbook {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -2134,4 +2134,127 @@ export class PostBook {
 }
 ```
 
+Importiamo l'entità nel modulo postbook
+***src\resources\postbook\postbook.module.ts***
+```ts
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostbookService } from './postbook.service';
+import { PostbookController } from './postbook.controller';
+import { Postbook } from './entities/postbook.entity';
 
+@Module({
+  imports: [TypeOrmModule.forFeature([Postbook])], // Importiamo l'entità
+  controllers: [PostbookController],
+  providers: [PostbookService],
+})
+export class PostbookModule {}
+```
+
+Definiamo il DTO di creazione del postbook
+***src\resources\postbook\dto\create-postbook.dto.ts***
+```ts
+import {
+  IsString,
+  IsBoolean,
+  IsOptional,
+  IsNotEmpty,
+  IsNumber,
+  MinLength,
+} from 'class-validator';
+
+export class CreatePostbookDto {
+  @IsString()
+  @MinLength(2)
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @MinLength(3)
+  @IsNotEmpty()
+  author: string;
+
+  @IsString()
+  @MinLength(13)
+  @IsNotEmpty()
+  ISBN: string;
+
+  @IsBoolean()
+  @IsOptional()
+  is_deleted?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  loaned_to?: number;
+}
+```
+Creiamo i primi metodi nel servizio
+***src\resources\postbook\postbook.service.ts***
+```ts
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Postbook } from './entities/postbook.entity';
+import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
+
+@Injectable()
+export class PostbookService {
+  constructor(
+    @InjectRepository(Postbook)
+    private postbookRepository: Repository<Postbook>,
+  ) {}
+
+  findAll(): Promise<Postbook[]> {
+    return this.postbookRepository.find();
+  }
+
+  async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {
+    const newPostbook = this.postbookRepository.create(createPostbookDto);
+    return this.postbookRepository.save(newPostbook);
+  }
+
+  findOne(id: number): Promise<Postbook> {
+    return this.postbookRepository.findOne({ where: { id } });
+  }
+}
+```
+
+Implementiamoli nel controller
+
+***src\resources\postbook\postbook.controller.ts***
+```ts
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { PostbookService } from './postbook.service';
+import { Postbook } from './entities/postbook.entity';
+import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
+
+@Controller('postbooks')
+export class PostbookController {
+  constructor(private readonly postbookService: PostbookService) {}
+
+  @Get()
+  findAll(): Promise<Postbook[]> {
+    return this.postbookService.findAll();
+  }
+
+  @Post()
+  create(@Body() createPostbookDto: CreatePostbookDto): Promise<Postbook> {
+    return this.postbookService.create(createPostbookDto);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string): Promise<Postbook> {
+    return this.postbookService.findOne(+id);
+  }
+}
+```
+
+Effettutiamo una chiamata POST a *http://localhost:3000/postbooks* inviando come body il seguente JSON per testare il codice:
+```json
+{
+  "title": "Il nome della rosa",
+  "author": "Umberto Eco",
+  "ISBN": "9788830423895",
+  "is_deleted": false
+}
+```
