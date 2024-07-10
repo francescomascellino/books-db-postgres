@@ -2338,7 +2338,8 @@ async update(
   ): Promise<Postbook> {
     // Cerchiamo il Libro da aggiornare
     const recordToUpdate = await this.postbookRepository.findOne({
-      where: { id, is_deleted: false },
+      // Non vogliamo che libri "nel cestino" vengano trovati
+      where: { id, is_deleted: false }, 
     });
 
     if (!recordToUpdate) {
@@ -2382,7 +2383,7 @@ async update(
   }
 ```
 
-Aggiungiamo il metodo soft Delete
+Aggiungiamo il metodo Soft Delete
 ***src\resources\postbook\postbook.service.ts***
 ```ts
 async softDelete(id: number): Promise<{ message: string }> {
@@ -2439,6 +2440,7 @@ Aggiungiamo il metodo Restore
 ```ts
 async restore(id: number): Promise<{ message: string }> {
     const book = await this.postbookRepository.findOne({
+      // Possiamo ripristinare solo i libri nel "cestino"
       where: { id, is_deleted: true },
     });
 
@@ -2494,6 +2496,7 @@ Aggiungiamo il metodo Delete
 async delete(id: number) {
     // Cerchiamo il Libro da eliminare
     const book = await this.postbookRepository.findOne({
+      // Eliminiamo solo i libri nel "cestino"
       where: { id, is_deleted: true },
     });
 

@@ -97,6 +97,7 @@ export class PostbookService {
   async delete(id: number) {
     // Cerchiamo il Libro da eliminare
     const book = await this.postbookRepository.findOne({
+      // Eliminiamo solo i libri nel "cestino"
       where: { id, is_deleted: true },
     });
 
@@ -179,6 +180,7 @@ export class PostbookService {
 
   async restore(id: number): Promise<{ message: string }> {
     const book = await this.postbookRepository.findOne({
+      // Possiamo ripristinare solo i libri nel "cestino"
       where: { id, is_deleted: true },
     });
 
