@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
@@ -35,8 +43,9 @@ export class PostbookController {
     return this.postbookService.update(Number(id), updatePostbookDto);
   }
 
-  /*   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postbookService.remove(+id);
-  } */
+  @Delete('delete/:id')
+  async delete(@Param('id') id: string): Promise<{ message: string }> {
+    await this.postbookService.delete(Number(id));
+    return { message: 'Book deleted successfully' };
+  }
 }
