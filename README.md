@@ -2300,3 +2300,18 @@ per ottenere una descrizione delle tabelle del DB
 Indexes:
     "PK_d7951319cb4360e6b9532fdcbd8" PRIMARY KEY, btree (id)
 ```
+
+Possiamo interrogare il DB da terminale
+```bash
+library=# SELECT * FROM pbook;
+ id |       title        |   author    |     ISBN      | is_deleted | loaned_to
+----+--------------------+-------------+---------------+------------+-----------
+  1 | Il nome della rosa | Umberto Eco | 9788830423895 | f          |
+(1 row)
+
+library=# SELECT title  FROM pbook WHERE id=1;
+       title
+--------------------
+ Il nome della rosa
+(1 row)
+```
