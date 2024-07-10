@@ -49,7 +49,7 @@ export class PostbookService {
       throw new NotFoundException(`Book with ID ${id} not found`);
     }
 
-    console.log(`Book found: "${book.title}"`);
+    console.log(`Book found: ${book.title}`);
 
     return book;
   }
@@ -104,16 +104,16 @@ export class PostbookService {
       );
     }
 
-    console.log(`Found "${book.title}"`);
+    console.log(`Found ${book.title}`);
 
     try {
       // Elimina il libro dal database
       await this.postbookRepository.remove(book);
 
-      console.log(`Book "${book.title}" with ID ${id} deleted successfully`);
+      console.log(`Book ${book.title} with ID ${id} deleted successfully`);
 
       return {
-        message: `Book "${book.title}" with ID ${id} deleted successfully`,
+        message: `Book ${book.title} with ID ${id} deleted successfully`,
       };
     } catch (error) {
       if (error) {
@@ -147,7 +147,7 @@ export class PostbookService {
       );
     }
 
-    console.log(`Found "${book.title}"`);
+    console.log(`Found ${book.title}`);
 
     // Aggiorniamo il campo is_deleted su true
     book.is_deleted = true;
@@ -156,15 +156,59 @@ export class PostbookService {
       // salviamo il libro
       await this.postbookRepository.save(book);
 
-      console.log(`Book with ID ${id} soft deleted successfully`);
+      console.log(`Book ${book.title} with ID ${id} soft deleted successfully`);
 
-      return { message: 'Book soft deleted successfully' };
+      return {
+        message: `Book ${book.title} with ID ${id} soft deleted successfully`,
+      };
     } catch (error) {
       console.error(`Error soft deleting book with ID ${id}: ${error.message}`);
 
       if (error instanceof QueryFailedError) {
         throw new BadRequestException(
           'Failed to soft delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
+    }
+  }
+
+  async restore(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: true },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
+    }
+
+    console.log(`Found ${book.title}`);
+
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = false;
+
+    try {
+      // salviamo il libro
+      await this.postbookRepository.save(book);
+
+      console.log(`Book ${book.title} with ID ${id} restored successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} restored successfully`,
+      };
+    } catch (error) {
+      console.error(
+        `Error soft restoring book with ID ${id}: ${error.message}`,
+      );
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to restore the book due to a database error.',
         );
       }
 

@@ -44,12 +44,17 @@ export class PostbookController {
   }
 
   @Delete('delete/:id')
-  async delete(@Param('id') id: string) { 
+  async delete(@Param('id') id: string) {
     return this.postbookService.delete(Number(id));
   }
 
   @Patch('delete/:id')
   async softDelete(@Param('id') id: string) {
     return this.postbookService.softDelete(Number(id));
+  }
+
+  @Patch('restore/:id')
+  async restore(@Param('id') id: string) {
+    return this.postbookService.restore(Number(id));
   }
 }
