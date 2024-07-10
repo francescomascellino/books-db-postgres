@@ -10,19 +10,19 @@ export class Postbook {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   title: string;
 
-  @Column({ length: 50 })
+  @Column({ type: 'varchar', length: 50 })
   author: string;
 
-  @Column({ length: 13, unique: true })
+  @Column({ type: 'varchar', length: 13, unique: true })
   ISBN: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   is_deleted: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   loaned_to: number | null;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }) // Esempio di colonna timestamp con valore di default corrente
