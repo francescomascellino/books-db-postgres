@@ -2258,3 +2258,45 @@ Effettutiamo una chiamata POST a *http://localhost:3000/postbooks* inviando come
   "is_deleted": false
 }
 ```
+
+controlliamo adesso tramite terminale il database.
+Dopo aver installato globalmente psql eseguiamo:
+```bash
+psql -U [USERNAME] -d [DB NAME]
+```
+e immettiamo la password
+
+il nostro terminale dovrebbe mostrare adesso la redice del database in cui siamo entrati con il comando -d
+```bash
+[DB NAME]=#
+```
+Eseguiamo
+```bash
+\dt
+```
+e dovremmo ottenere una lista delle tabelle nel DB
+```bash
+         List of relations
+ Schema | Name  | Type  |  Owner
+--------+-------+-------+----------
+ public | pbook | table | postgres
+(1 row)
+```
+Eseguiamo 
+```bash
+\d pbook 
+```
+per ottenere una descrizione delle tabelle del DB
+```bash
+                                     Table "public.pbook"
+   Column   |         Type          | Collation | Nullable |              Default
+------------+-----------------------+-----------+----------+-----------------------------------
+ id         | integer               |           | not null | nextval('pbook_id_seq'::regclass)
+ title      | character varying(50) |           | not null |
+ author     | character varying(50) |           | not null |
+ ISBN       | character varying(13) |           | not null |
+ is_deleted | boolean               |           | not null | false
+ loaned_to  | integer               |           |          |
+Indexes:
+    "PK_d7951319cb4360e6b9532fdcbd8" PRIMARY KEY, btree (id)
+```
