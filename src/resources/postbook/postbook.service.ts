@@ -40,7 +40,9 @@ export class PostbookService {
   }
 
   async findOne(id: number): Promise<Postbook> {
-    const book = await this.postbookRepository.findOne({ where: { id } });
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
 
     if (!book) {
       console.log(`Book with ID ${id} not found`);
@@ -58,7 +60,7 @@ export class PostbookService {
   ): Promise<Postbook> {
     // Cerchiamo il Libro da aggiornare
     const recordToUpdate = await this.postbookRepository.findOne({
-      where: { id },
+      where: { id, is_deleted: false },
     });
 
     if (!recordToUpdate) {
@@ -89,15 +91,17 @@ export class PostbookService {
     return recordToUpdate;
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number) {
     // Cerchiamo il Libro da eliminare
     const book = await this.postbookRepository.findOne({
-      where: { id },
+      where: { id, is_deleted: true },
     });
 
     if (!book) {
-      console.log(`Book with ID ${id} not found`);
-      throw new NotFoundException(`Book with ID ${id} not found`);
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
     }
 
     console.log(`Found "${book.title}"`);
@@ -105,10 +109,16 @@ export class PostbookService {
     try {
       // Elimina il libro dal database
       await this.postbookRepository.remove(book);
+
       console.log(`Book "${book.title}" with ID ${id} deleted successfully`);
+
+      return {
+        message: `Book "${book.title}" with ID ${id} deleted successfully`,
+      };
     } catch (error) {
       if (error) {
         console.log(`Error deleting book with ID ${id}: ${error.message}`);
+
         throw new BadRequestException(
           `Error deleting book with ID ${id}: ${error.message}`,
         );
@@ -121,6 +131,44 @@ export class PostbookService {
       }
 
       throw new InternalServerErrorException('Failed to delete the book.');
+    }
+  }
+
+  async softDelete(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or already deleted`);
+
+      throw new NotFoundException(
+        `Book with ID ${id} not found or already deleted`,
+      );
+    }
+
+    console.log(`Found "${book.title}"`);
+
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = true;
+
+    try {
+      // salviamo il libro
+      await this.postbookRepository.save(book);
+
+      console.log(`Book with ID ${id} soft deleted successfully`);
+
+      return { message: 'Book soft deleted successfully' };
+    } catch (error) {
+      console.error(`Error soft deleting book with ID ${id}: ${error.message}`);
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to soft delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
     }
   }
 }

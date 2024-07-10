@@ -44,8 +44,12 @@ export class PostbookController {
   }
 
   @Delete('delete/:id')
-  async delete(@Param('id') id: string): Promise<{ message: string }> {
-    await this.postbookService.delete(Number(id));
-    return { message: 'Book deleted successfully' };
+  async delete(@Param('id') id: string) { 
+    return this.postbookService.delete(Number(id));
+  }
+
+  @Patch('delete/:id')
+  async softDelete(@Param('id') id: string) {
+    return this.postbookService.softDelete(Number(id));
   }
 }
