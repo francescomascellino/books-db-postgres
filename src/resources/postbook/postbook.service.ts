@@ -16,8 +16,11 @@ export class PostbookService {
     private postbookRepository: Repository<Postbook>,
   ) {}
 
-  findAll(): Promise<Postbook[]> {
-    return this.postbookRepository.find();
+  async findAll(): Promise<Postbook[]> {
+    // return this.postbookRepository.find();
+    return await this.postbookRepository.find({
+      where: { is_deleted: false },
+    });
   }
 
   async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {

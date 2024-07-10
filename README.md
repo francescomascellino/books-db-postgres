@@ -2338,10 +2338,11 @@ async update(
   ): Promise<Postbook> {
     // Cerchiamo il Libro da aggiornare
     const recordToUpdate = await this.postbookRepository.findOne({
-      where: { id },
+      where: { id, is_deleted: false },
     });
 
     if (!recordToUpdate) {
+      console.log(`Book with ID ${id} not found`);
       throw new NotFoundException(`Book with id ${id} not found`);
     }
 
@@ -2350,15 +2351,23 @@ async update(
     // Copiamo i dati del DTO in recordToUpdate
     Object.assign(recordToUpdate, updatePostbookDto);
 
-    // Salviamo il record
-    this.postbookRepository.save(recordToUpdate);
+    try {
+      // Salviamo il record
+      await this.postbookRepository.save(recordToUpdate);
+    } catch (error) {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException('Failed to update the book.');
+    }
 
     console.log(
       `Book "${recordToUpdate.title}" updated at ${recordToUpdate.updated_at}`,
     );
 
     return recordToUpdate;
-}
+  }
 ```
 
 ***src\resources\postbook\postbook.controller.ts***
@@ -2366,10 +2375,211 @@ async update(
 @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() UpdatePostbookDto: UpdatePostbookDto,
+    @Body() updatePostbookDto: UpdatePostbookDto,
   ): Promise<Postbook> {
     console.log(`Updating Book with id ${id}`);
-    return this.postbookService.update(Number(id), UpdatePostbookDto);
-}
+    return this.postbookService.update(Number(id), updatePostbookDto);
+  }
 ```
+
+Aggiungiamo il metodo soft Delete
+***src\resources\postbook\postbook.service.ts***
+```ts
+async softDelete(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or already deleted`);
+
+      throw new NotFoundException(
+        `Book with ID ${id} not found or already deleted`,
+      );
+    }
+
+    console.log(`Found ${book.title}`);
+
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = true;
+
+    try {
+      // salviamo il libro
+      await this.postbookRepository.save(book);
+
+      console.log(`Book ${book.title} with ID ${id} soft deleted successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} soft deleted successfully`,
+      };
+    } catch (error) {
+      console.error(`Error soft deleting book with ID ${id}: ${error.message}`);
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to soft delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
+    }
+  }
+```
+***src\resources\postbook\postbook.controller.ts***
+```ts
+@Patch('delete/:id')
+  async softDelete(@Param('id') id: string) {
+    console.log(`Moving Book with id ${id} in the Recycle Bin`);
+    return this.postbookService.softDelete(Number(id));
+  }
+```
+
+Aggiungiamo il metodo Restore
+***src\resources\postbook\postbook.service.ts***
+```ts
+async restore(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: true },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
+    }
+
+    console.log(`Found ${book.title}`);
+
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = false;
+
+    try {
+      // salviamo il libro
+      await this.postbookRepository.save(book);
+
+      console.log(`Book ${book.title} with ID ${id} restored successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} restored successfully`,
+      };
+    } catch (error) {
+      console.error(
+        `Error soft restoring book with ID ${id}: ${error.message}`,
+      );
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to restore the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
+    }
+  }
+```
+***src\resources\postbook\postbook.controller.ts***
+```ts
+@Patch('restore/:id')
+  async restore(@Param('id') id: string) {
+    console.log(`Restoring Book with id ${id}`);
+    return this.postbookService.restore(Number(id));
+  }
+```
+
+Aggiungiamo il metodo Delete
+***src\resources\postbook\postbook.service.ts***
+```ts
+async delete(id: number) {
+    // Cerchiamo il Libro da eliminare
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: true },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
+    }
+
+    console.log(`Found ${book.title}`);
+
+    try {
+      // Elimina il libro dal database
+      await this.postbookRepository.remove(book);
+
+      console.log(`Book ${book.title} with ID ${id} deleted successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} deleted successfully`,
+      };
+    } catch (error) {
+      if (error) {
+        console.log(`Error deleting book with ID ${id}: ${error.message}`);
+
+        throw new BadRequestException(
+          `Error deleting book with ID ${id}: ${error.message}`,
+        );
+      }
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to delete the book.');
+    }
+  }
+```
+***src\resources\postbook\postbook.controller.ts***
+```ts
+@Delete('delete/:id')
+  async delete(@Param('id') id: string) {
+    console.log(`Deleting Book with id ${id}`);
+    return this.postbookService.delete(Number(id));
+  }
+```
+
+Modifichiamo i metodi di ricerca per evitare vengano trovati libri nel "cestino"
+
+Quando cerchiamo un singolo libro:
+```ts
+await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+```
+
+Ad Esempio nel metodo findOne()
+```ts
+async findOne(id: number): Promise<Postbook> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found`);
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    console.log(`Book found: ${book.title}`);
+
+    return book;
+  }
+```
+
+Quando cerchiamo più record, come in findAll():
+```ts
+async findAll(): Promise<Postbook[]> {
+    return await this.postbookRepository.find({
+      where: { is_deleted: false },
+    });
+  }
+```
+
+
+
+
 

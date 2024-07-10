@@ -45,16 +45,19 @@ export class PostbookController {
 
   @Delete('delete/:id')
   async delete(@Param('id') id: string) {
+    console.log(`Deleting Book with id ${id}`);
     return this.postbookService.delete(Number(id));
   }
 
   @Patch('delete/:id')
   async softDelete(@Param('id') id: string) {
+    console.log(`Moving Book with id ${id} in the Recycle Bin`);
     return this.postbookService.softDelete(Number(id));
   }
 
   @Patch('restore/:id')
   async restore(@Param('id') id: string) {
+    console.log(`Restoring Book with id ${id}`);
     return this.postbookService.restore(Number(id));
   }
 }
