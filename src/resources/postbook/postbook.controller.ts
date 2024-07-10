@@ -2,7 +2,6 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
 
 @Controller('postbooks')
@@ -30,10 +29,10 @@ export class PostbookController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() UpdatePostbookDto: UpdatePostbookDto,
+    @Body() updatePostbookDto: UpdatePostbookDto,
   ): Promise<Postbook> {
     console.log(`Updating Book with id ${id}`);
-    return this.postbookService.update(Number(id), UpdatePostbookDto);
+    return this.postbookService.update(Number(id), updatePostbookDto);
   }
 
   /*   @Delete(':id')
