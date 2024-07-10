@@ -2581,8 +2581,3 @@ async findAll(): Promise<Postbook[]> {
     });
   }
 ```
-
-
-
-
-
