@@ -20,8 +20,8 @@ export class PostbookService {
     @InjectRepository(Postuser)
     private postuserRepository: Repository<Postuser>,
 
-    @InjectRepository(Postuser)
-    private postuserPostbook: Repository<PostuserPostbook>,
+    @InjectRepository(PostuserPostbook)
+    private postuserPostbookRepository: Repository<PostuserPostbook>,
   ) {}
 
   async findAll(): Promise<Postbook[]> {
@@ -229,17 +229,77 @@ export class PostbookService {
     }
   }
 
-  async getloans(): Promise<
+  async getLoans(): Promise<
     { username: string; name: string; books: string[] }[]
   > {
-    const users = await this.postuserRepository.find({
-      relations: ['puserPbooks', 'puserPbooks.pbook'],
+    const loans = await this.postuserPostbookRepository.find({
+      relations: ['pbook', 'puser'],
     });
 
-    return users.map((user) => ({
-      username: user.username,
-      name: user.name,
-      books: user.puserPbooks.map((puserPbook) => puserPbook.pbook.title),
-    }));
+    // Utilizziamo un oggetto mappato per tenere traccia dei libri per ciascun utente
+    const loansMapped: {
+      [username: string]: { username: string; name: string; books: string[] };
+    } = {};
+
+    loans.forEach((loan) => {
+      const username = loan.puser.username;
+
+      // Se l'utente non è ancora stato aggiunto all'oggetto mappato, inizializziamo l'oggetto
+      if (!loansMapped[username]) {
+        loansMapped[username] = {
+          username: loan.puser.username,
+          name: loan.puser.name,
+          books: [],
+        };
+      }
+
+      // Aggiungiamo il titolo del libro alla lista dei libri dell'utente
+      loansMapped[username].books.push(loan.pbook.title);
+    });
+
+    // Convertiamo l'oggetto mappato in un array di risultati
+    const result = Object.values(loansMapped);
+
+    return result;
+  }
+
+  async assignBookToUser(
+    bookId: number,
+    userId: number,
+  ): Promise<PostuserPostbook> {
+    // Cerca il libro dal repository dei libri
+    const book = await this.postbookRepository.findOne({
+      where: { id: bookId, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${bookId} not found`);
+      throw new NotFoundException(`Book with ID ${bookId} not found`);
+    }
+
+    // Cerca l'utente dal repository degli utenti
+    const user = await this.postuserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      console.log(`User with ID ${userId} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Creazione della relazione PostuserPostbook
+    const newPostuserPostbook = new PostuserPostbook();
+    newPostuserPostbook.puser = user;
+    newPostuserPostbook.pbook = book;
+
+    try {
+      // Salva la nuova relazione nel repository PostuserPostbook
+      await this.postuserPostbookRepository.save(newPostuserPostbook);
+      console.log(`Book "${book.title}" assigned to user "${user.username}"`);
+      return newPostuserPostbook;
+    } catch (error) {
+      console.error(`Error assigning book to user: ${error.message}`);
+      throw new InternalServerErrorException('Failed to assign book to user');
+    }
   }
 }
