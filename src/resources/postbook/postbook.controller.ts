@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  InternalServerErrorException,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -13,7 +11,6 @@ import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
-import { PostuserPostbook } from '../postuser_postbook/entities/postuser_postbook.entity';
 
 @Controller('postbooks')
 export class PostbookController {
@@ -31,29 +28,22 @@ export class PostbookController {
     return this.postbookService.create(createPostbookDto);
   }
 
-  @Post(':bookId/assign/:userId')
-  async assignBookToUser(
+  @Post(':bookId/burrow/:userId')
+  async borrowBook(
     @Param('bookId') bookId: number,
     @Param('userId') userId: number,
-  ): Promise<PostuserPostbook> {
-    try {
-      const result = await this.postbookService.assignBookToUser(
-        bookId,
-        userId,
-      );
-      return result;
-    } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      } else {
-        throw new InternalServerErrorException(
-          'Failed to assign book to user.',
-        );
-      }
-    }
+  ) {
+    const result = await this.postbookService.borrowBook(bookId, userId);
+    return result;
+  }
+
+  @Post(':bookId/return/:userId')
+  async returnBook(
+    @Param('bookId') bookId: number,
+    @Param('userId') userId: number,
+  ) {
+    const result = await this.postbookService.returnBook(bookId, userId);
+    return result;
   }
 
   @Get('loans')
