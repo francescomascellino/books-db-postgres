@@ -9,6 +9,10 @@ import { UserModule } from './resources/user/user.module';
 import { AuthModule } from './resources/auth/auth.module';
 import { PostbookModule } from './resources/postbook/postbook.module';
 import { Postbook } from './resources/postbook/entities/postbook.entity';
+import { PostuserModule } from './resources/postuser/postuser.module';
+import { Postuser } from './resources/postuser/entities/postuser.entity';
+import { PostuserPostbookModule } from './resources/postuser_postbook/postuser_postbook.module';
+import { PostuserPostbook } from './resources/postuser_postbook/entities/postuser_postbook.entity';
 
 @Module({
   imports: [
@@ -44,7 +48,7 @@ import { Postbook } from './resources/postbook/entities/postbook.entity';
         username: configService.get<string>('POSTGRES_USER'),
         password: configService.get<string>('POSTGRES_PASSWORD'),
         database: configService.get<string>('POSTGRES_DB'),
-        entities: [Postbook],
+        entities: [Postbook, Postuser, PostuserPostbook],
         synchronize: true,
       }),
       inject: [ConfigService],
@@ -54,6 +58,8 @@ import { Postbook } from './resources/postbook/entities/postbook.entity';
     UserModule,
     AuthModule,
     PostbookModule, // Modulo entity book in PostgreSQL
+    PostuserModule,
+    PostuserPostbookModule,
   ],
   controllers: [AppController],
   providers: [AppService],
