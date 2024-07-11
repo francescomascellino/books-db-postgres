@@ -229,40 +229,6 @@ export class PostbookService {
     }
   }
 
-  async getLoans(): Promise<
-    { username: string; name: string; books: string[] }[]
-  > {
-    const loans = await this.postuserPostbookRepository.find({
-      relations: ['pbook', 'puser'],
-    });
-
-    // Utilizziamo un oggetto mappato per tenere traccia dei libri per ciascun utente
-    const loansMapped: {
-      [username: string]: { username: string; name: string; books: string[] };
-    } = {};
-
-    loans.forEach((loan) => {
-      const username = loan.puser.username;
-
-      // Se l'utente non è ancora stato aggiunto all'oggetto mappato, inizializziamo l'oggetto
-      if (!loansMapped[username]) {
-        loansMapped[username] = {
-          username: loan.puser.username,
-          name: loan.puser.name,
-          books: [],
-        };
-      }
-
-      // Aggiungiamo il titolo del libro alla lista dei libri dell'utente
-      loansMapped[username].books.push(loan.pbook.title);
-    });
-
-    // Convertiamo l'oggetto mappato in un array di risultati
-    const result = Object.values(loansMapped);
-
-    return result;
-  }
-
   async borrowBook(bookId: number, userId: number) {
     // Cerca il libro dal repository dei libri
     const book = await this.postbookRepository.findOne({
@@ -374,5 +340,39 @@ export class PostbookService {
       console.error(`Error returning book from user: ${error.message}`);
       throw new InternalServerErrorException('Failed to return book from user');
     }
+  }
+
+  async getLoans(): Promise<
+    { username: string; name: string; books: string[] }[]
+  > {
+    const loans = await this.postuserPostbookRepository.find({
+      relations: ['pbook', 'puser'],
+    });
+
+    // Utilizziamo un oggetto mappato per tenere traccia dei libri per ciascun utente
+    const loansMapped: {
+      [username: string]: { username: string; name: string; books: string[] };
+    } = {};
+
+    loans.forEach((loan) => {
+      const username = loan.puser.username;
+
+      // Se l'utente non è ancora stato aggiunto all'oggetto mappato, inizializziamo l'oggetto
+      if (!loansMapped[username]) {
+        loansMapped[username] = {
+          username: loan.puser.username,
+          name: loan.puser.name,
+          books: [],
+        };
+      }
+
+      // Aggiungiamo il titolo del libro alla lista dei libri dell'utente
+      loansMapped[username].books.push(loan.pbook.title);
+    });
+
+    // Convertiamo l'oggetto mappato in un array di risultati
+    const result = Object.values(loansMapped);
+
+    return result;
   }
 }

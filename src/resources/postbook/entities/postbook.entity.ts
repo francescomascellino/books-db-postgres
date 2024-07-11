@@ -1,11 +1,9 @@
-// import { Postuser } from 'src/resources/postuser/entities/postuser.entity';
 import { PostuserPostbook } from 'src/resources/postuser_postbook/entities/postuser_postbook.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  // ManyToOne,
   OneToMany,
 } from 'typeorm';
 
@@ -35,6 +33,23 @@ export class Postbook {
   @UpdateDateColumn()
   updated_at: Date;
 
+  /**
+   * Relazione uno-a-molti con PostuserPostbook.
+   *
+   * Un libro può avere molti prestiti rappresentati da istanze di PostuserPostbook.
+   *
+   * Utilizziamo puserPbooks per rappresentare questa relazione:
+   * - puserPbooks è un array di istanze di PostuserPostbook associato a questo libro.
+   * - La decorazione @OneToMany ci permette di definire una relazione uno-a-molti, indicando che ogni istanza di Postbook
+   *   può avere molteplici istanze di PostuserPostbook.
+   * - () => PostuserPostbook specifica il tipo dell'entità di destinazione (PostuserPostbook).
+   * - (puserPbook) => puserPbook.pbook specifica il campo in PostuserPostbook che fa riferimento a questo libro.
+   *
+   * Il nome "pbook" è stato scelto convenzionalmente per rappresentare questa relazione, non è legato a un nome obbligatorio dell'entità Postbook.
+   * È buona prassi seguire le convenzioni per mantenere il codice comprensibile e consistente.
+   *
+   * Questo campo ci permette di accedere a tutti i prestiti (PostuserPostbook) associati a questo libro.
+   */
   @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
   puserPbooks: PostuserPostbook[];
 }

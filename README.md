@@ -2584,3 +2584,230 @@ async findAll(): Promise<Postbook[]> {
     });
   }
 ```
+
+Relazioni tra entità
+
+Nel nostro database abbiamo varie entità. I libri:
+```bash
+                      Table "public.pbook"
+   Column   |            Type             | Collation | Nullable |              Default
+------------+-----------------------------+-----------+----------+-----------------------------------
+ id         | integer                     |           | not null | nextval('pbook_id_seq'::regclass)
+ title      | character varying(50)       |           | not null |
+ author     | character varying(50)       |           | not null |
+ ISBN       | character varying(13)       |           | not null |
+ created_at | timestamp without time zone |           | not null | now()
+ updated_at | timestamp without time zone |           | not null | now()
+ is_deleted | boolean                     |           | not null | false
+ loaned_to  | integer                     |           |          |
+Indexes:
+    "PK_d7951319cb4360e6b9532fdcbd8" PRIMARY KEY, btree (id)
+    "UQ_554e5ab6fc052edcc1677f1fd9d" UNIQUE CONSTRAINT, btree ("ISBN")
+Referenced by:
+    TABLE "puser_pbook" CONSTRAINT "FK_3b1e5fd60ed5cc8b42dae8a5d59" FOREIGN KEY (pbook_id) REFERENCES pbook(id)
+```
+Gli Utenti:
+```bash
+                        Table "public.puser"
+  Column  |       Type        | Collation | Nullable |              Default
+----------+-------------------+-----------+----------+-----------------------------------
+ id       | integer           |           | not null | nextval('puser_id_seq'::regclass)
+ username | character varying |           | not null |
+ password | character varying |           | not null |
+ name     | character varying |           | not null |
+Indexes:
+    "puser_pkey" PRIMARY KEY, btree (id)
+    "UQ_c24e9ec60fc7d67f7cacb49d565" UNIQUE CONSTRAINT, btree (username)
+Referenced by:
+    TABLE "puser_pbook" CONSTRAINT "FK_2bde289fadd861fb369ae6aa366" FOREIGN KEY (puser_id) REFERENCES puser(id)
+```
+E i prestiti:
+```bash
+                        Table "public.puser_pbook"
+  Column  |  Type   | Collation | Nullable |                 Default
+----------+---------+-----------+----------+-----------------------------------------
+ puser_id | integer |           | not null |
+ pbook_id | integer |           | not null |
+ id       | integer |           | not null | nextval('puser_pbook_id_seq'::regclass)
+Indexes:
+    "PK_ac7942791528b55a11ee4d9581b" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "FK_2bde289fadd861fb369ae6aa366" FOREIGN KEY (puser_id) REFERENCES puser(id)
+    "FK_3b1e5fd60ed5cc8b42dae8a5d59" FOREIGN KEY (pbook_id) REFERENCES pbook(id)
+```
+
+Ogni utente può prendere in prestito molti libri, ma un libro può essere prestato a un solo utente per volta. 
+Questo viene rappresentato tramite la tabella di unione puser_pbook. Abbiamo una relazione uno-a-molti tra Utenti e prestiti e una relazione molti-a-uno tra libri e prestiti (I libri possono avere UN prestito).
+
+Quando Definiamo le entità, diventa necessario specificare queste relazioni e creare degli identificativi che ci permetteranno di interrogare il DB.
+***src\resources\postuser_postbook\entities\postuser_postbook.entity.ts***
+```ts
+import { PostuserPostbook } from 'src/resources/postuser_postbook/entities/postuser_postbook.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+
+@Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
+export class Postbook {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  // ... Altre definizioni dei campi
+
+  /**
+   * Relazione uno-a-molti con PostuserPostbook.
+   *
+   * Un libro può avere molti prestiti rappresentati da istanze di PostuserPostbook.
+   *
+   * Utilizziamo puserPbooks per rappresentare questa relazione:
+   * - puserPbooks è un array di istanze di PostuserPostbook associato a questo libro.
+   * - La decorazione @OneToMany ci permette di definire una relazione uno-a-molti, indicando che ogni istanza di Postbook
+   *   può avere molteplici istanze di PostuserPostbook.
+   * - () => PostuserPostbook specifica il tipo dell'entità di destinazione (PostuserPostbook).
+   * - (puserPbook) => puserPbook.pbook specifica il campo in PostuserPostbook che fa riferimento a questo libro.
+   *
+   * Il nome "pbook" è stato scelto convenzionalmente per rappresentare questa relazione, non è legato a un nome obbligatorio dell'entità Postbook.
+   * È buona prassi seguire le convenzioni per mantenere il codice comprensibile e consistente.
+   *
+   * Questo campo ci permette di accedere a tutti i prestiti (PostuserPostbook) associati a questo libro.
+   */
+  // 1 Postbook ha molti PostuserPostbook.
+  @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
+  puserPbooks: PostuserPostbook[];
+}
+```
+
+Allo stesso modo dobbiamo specificare le relazioni in puser
+
+***src\resources\postuser\entities\postuser.entity.ts***
+```ts
+/**
+   * Relazione uno-a-molti con PostuserPostbook.
+   *
+   * Ogni utente può avere molti prestiti rappresentati da istanze di PostuserPostbook.
+   *
+   * Utilizziamo puserPbooks per rappresentare questa relazione:
+   * - puserPbooks è un array di istanze di PostuserPostbook associato a questo utente.
+   * - La decorazione @OneToMany ci permette di definire una relazione uno-a-molti, indicando che ogni istanza di Postuser
+   *   può avere molteplici istanze di PostuserPostbook.
+   * - () => PostuserPostbook specifica il tipo dell'entità di destinazione (PostuserPostbook).
+   * - (puserPbook) => puserPbook.puser specifica il campo in PostuserPostbook che fa riferimento a questo utente.
+   *
+   * Il nome "puser" è stato scelto convenzionalmente per rappresentare questa relazione, non è legato a un nome obbligatorio dell'entità Postuser.
+   * È buona prassi seguire le convenzioni per mantenere il codice comprensibile e consistente.
+   *
+   * Questo campo ci permette di accedere a tutti i prestiti (PostuserPostbook) associati a questo utente.
+   */
+  @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.puser)
+  puserPbooks: PostuserPostbook[];
+```
+
+Successiamente definiamo anche le relazioni tra prestiti (puser_pbooks) e utenti (puser) e libri (pbook)
+
+***src\resources\postuser_postbook\entities\postuser_postbook.entity.ts***
+```ts
+import { Postbook } from 'src/resources/postbook/entities/postbook.entity';
+import { Postuser } from 'src/resources/postuser/entities/postuser.entity';
+import {
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  Entity,
+  Column,
+  JoinColumn,
+} from 'typeorm';
+
+@Entity('puser_pbook')
+export class PostuserPostbook {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ nullable: false })
+  puser_id: number;
+
+  // Ci assicuriamo che l'indice del libro sia unico
+  // In questo modo un libro non potrà essere messo in prestito più volte
+  @Column({ unique: true, nullable: false })
+  pbook_id: number;
+
+  /**
+   * Relazione molti-a-uno con Postuser.
+   *
+   * Ogni prestito (PostuserPostbook) fa riferimento a un singolo utente (Postuser).
+   *
+   * Utilizziamo puser per rappresentare questa relazione:
+   * - puser è l'istanza di Postuser associata a questo prestito (PostuserPostbook).
+   * - La decorazione @ManyToOne ci permette di definire una relazione molti-a-uno, indicando che molteplici istanze di PostuserPostbook
+   *   possono fare riferimento a un singolo utente (Postuser).
+   * - () => Postuser specifica il tipo dell'entità di destinazione (Postuser).
+   * - (postuser) => postuser.puserPbooks specifica il campo in Postuser che fa riferimento a questo prestito (PostuserPostbook).
+   * - @JoinColumn({ name: 'puser_id' }) specifica il nome della colonna nel database che mappa questa relazione.
+   *
+   * Questo campo ci permette di accedere all'utente associato a questo prestito (PostuserPostbook).
+   */
+  @ManyToOne(() => Postuser, (postuser) => postuser.puserPbooks)
+  @JoinColumn({ name: 'puser_id' })
+  puser: Postuser;
+
+  /**
+   * Relazione molti-a-uno con Postbook.
+   *
+   * Ogni prestito (PostuserPostbook) fa riferimento a un singolo libro (Postbook).
+   *
+   * Utilizziamo pbook per rappresentare questa relazione:
+   * - pbook è l'istanza di Postbook associata a questo prestito (PostuserPostbook).
+   * - La decorazione @ManyToOne ci permette di definire una relazione molti-a-uno, indicando che molteplici istanze di PostuserPostbook
+   *   possono fare riferimento a un singolo libro (Postbook).
+   * - () => Postbook specifica il tipo dell'entità di destinazione (Postbook).
+   * - (postbook) => postbook.puserPbooks specifica il campo in Postbook che fa riferimento a questo prestito (PostuserPostbook).
+   * - @JoinColumn({ name: 'pbook_id' }) specifica il nome della colonna nel database che mappa questa relazione.
+   *
+   * Questo campo ci permette di accedere al libro associato a questo prestito (PostuserPostbook).
+   */
+  @ManyToOne(() => Postbook, (postbook) => postbook.puserPbooks)
+  @JoinColumn({ name: 'pbook_id' })
+  pbook: Postbook;
+}
+```
+
+Successivamente creiamo un metodo che usi queste relazioni per ottenere i libri presi in prestito
+***src\resources\postbook\postbook.service.ts***
+```ts
+async getLoans(): Promise<
+    { username: string; name: string; books: string[] }[]
+  > {
+
+    const loans = await this.postuserPostbookRepository.find({
+      relations: ['pbook', 'puser'],
+    });
+
+    // Utilizziamo un oggetto mappato per tenere traccia dei libri per ciascun utente
+    const loansMapped: {
+      [username: string]: { username: string; name: string; books: string[] };
+    } = {};
+
+    loans.forEach((loan) => {
+      const username = loan.puser.username;
+
+      // Se l'utente non è ancora stato aggiunto all'oggetto mappato, inizializziamo l'oggetto
+      if (!loansMapped[username]) {
+        loansMapped[username] = {
+          username: loan.puser.username,
+          name: loan.puser.name,
+          books: [],
+        };
+      }
+
+      // Aggiungiamo il titolo del libro alla lista dei libri dell'utente
+      loansMapped[username].books.push(loan.pbook.title);
+    });
+
+    // Convertiamo l'oggetto mappato in un array di risultati
+    const result = Object.values(loansMapped);
+
+    return result;
+  }
+```
