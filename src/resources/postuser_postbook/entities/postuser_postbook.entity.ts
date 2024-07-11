@@ -6,6 +6,7 @@ import {
   Entity,
   Column,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 
 @Entity('puser_pbook')
@@ -39,21 +40,21 @@ export class PostuserPostbook {
   puser: Postuser;
 
   /**
-   * Relazione molti-a-uno con Postbook.
+   * Relazione uno-a-uno con Postbook.
    *
-   * Ogni prestito (PostuserPostbook) fa riferimento a un singolo libro (Postbook).
+   * Un prestito (PostuserPostbook) fa riferimento a un singolo libro (Postbook).
    *
    * Utilizziamo pbook per rappresentare questa relazione:
    * - pbook è l'istanza di Postbook associata a questo prestito (PostuserPostbook).
-   * - La decorazione @ManyToOne ci permette di definire una relazione molti-a-uno, indicando che molteplici istanze di PostuserPostbook
-   *   possono fare riferimento a un singolo libro (Postbook).
+   * - La decorazione @OneToOne ci permette di definire una relazione uno-a-uno, indicando che una istanza di PostuserPostbook
+   *   può fare riferimento a un singolo libro (Postbook).
    * - () => Postbook specifica il tipo dell'entità di destinazione (Postbook).
    * - (postbook) => postbook.puserPbooks specifica il campo in Postbook che fa riferimento a questo prestito (PostuserPostbook).
    * - @JoinColumn({ name: 'pbook_id' }) specifica il nome della colonna nel database che mappa questa relazione.
    *
    * Questo campo ci permette di accedere al libro associato a questo prestito (PostuserPostbook).
    */
-  @ManyToOne(() => Postbook, (postbook) => postbook.puserPbooks)
+  @OneToOne(() => Postbook, (postbook) => postbook.puserPbooks)
   @JoinColumn({ name: 'pbook_id' })
   pbook: Postbook;
 }
