@@ -9,11 +9,19 @@ import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
 import { QueryFailedError, Repository } from 'typeorm';
+import { Postuser } from '../postuser/entities/postuser.entity';
+import { PostuserPostbook } from '../postuser_postbook/entities/postuser_postbook.entity';
 @Injectable()
 export class PostbookService {
   constructor(
     @InjectRepository(Postbook)
     private postbookRepository: Repository<Postbook>,
+
+    @InjectRepository(Postuser)
+    private postuserRepository: Repository<Postuser>,
+
+    @InjectRepository(Postuser)
+    private postuserPostbook: Repository<PostuserPostbook>,
   ) {}
 
   async findAll(): Promise<Postbook[]> {
@@ -219,5 +227,19 @@ export class PostbookService {
 
       throw new InternalServerErrorException('Failed to soft delete the book.');
     }
+  }
+
+  async getloans(): Promise<
+    { username: string; name: string; books: string[] }[]
+  > {
+    const users = await this.postuserRepository.find({
+      relations: ['puserPbooks', 'puserPbooks.pbook'],
+    });
+
+    return users.map((user) => ({
+      username: user.username,
+      name: user.name,
+      books: user.puserPbooks.map((puserPbook) => puserPbook.pbook.title),
+    }));
   }
 }

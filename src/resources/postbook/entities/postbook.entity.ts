@@ -1,8 +1,12 @@
+// import { Postuser } from 'src/resources/postuser/entities/postuser.entity';
+import { PostuserPostbook } from 'src/resources/postuser_postbook/entities/postuser_postbook.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  // ManyToOne,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
@@ -30,4 +34,7 @@ export class Postbook {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
+  puserPbooks: PostuserPostbook[];
 }

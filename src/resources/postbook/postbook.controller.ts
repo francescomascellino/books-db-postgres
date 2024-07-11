@@ -28,6 +28,11 @@ export class PostbookController {
     return this.postbookService.create(createPostbookDto);
   }
 
+  @Get('loans')
+  async getloans() {
+    return this.postbookService.getloans();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string): Promise<Postbook> {
     console.log(`Finding Book with id ${id}`);

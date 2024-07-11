@@ -1,16 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  // Post,
+  // Body,
+  // Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { PostuserPostbookService } from './postuser_postbook.service';
-import { CreatePostuserPostbookDto } from './dto/create-postuser_postbook.dto';
-import { UpdatePostuserPostbookDto } from './dto/update-postuser_postbook.dto';
+// import { CreatePostuserPostbookDto } from './dto/create-postuser_postbook.dto';
+// import { UpdatePostuserPostbookDto } from './dto/update-postuser_postbook.dto';
 
 @Controller('postuser-postbook')
 export class PostuserPostbookController {
-  constructor(private readonly postuserPostbookService: PostuserPostbookService) {}
+  constructor(
+    private readonly postuserPostbookService: PostuserPostbookService,
+  ) {}
 
+  /* 
   @Post()
   create(@Body() createPostuserPostbookDto: CreatePostuserPostbookDto) {
     return this.postuserPostbookService.create(createPostuserPostbookDto);
   }
+   */
 
   @Get()
   findAll() {
@@ -22,10 +34,15 @@ export class PostuserPostbookController {
     return this.postuserPostbookService.findOne(+id);
   }
 
+  /* 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePostuserPostbookDto: UpdatePostuserPostbookDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updatePostuserPostbookDto: UpdatePostuserPostbookDto,
+  ) {
     return this.postuserPostbookService.update(+id, updatePostuserPostbookDto);
   }
+ */
 
   @Delete(':id')
   remove(@Param('id') id: string) {

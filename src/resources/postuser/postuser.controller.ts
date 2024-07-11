@@ -1,17 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Delete } from '@nestjs/common';
 import { PostuserService } from './postuser.service';
-import { CreatePostuserDto } from './dto/create-postuser.dto';
-import { UpdatePostuserDto } from './dto/update-postuser.dto';
+// import { CreatePostuserDto } from './dto/create-postuser.dto';
+// import { UpdatePostuserDto } from './dto/update-postuser.dto';
 
 @Controller('postuser')
 export class PostuserController {
   constructor(private readonly postuserService: PostuserService) {}
-
+  /* 
   @Post()
   create(@Body() createPostuserDto: CreatePostuserDto) {
     return this.postuserService.create(createPostuserDto);
   }
-
+ */
   @Get()
   findAll() {
     return this.postuserService.findAll();
@@ -21,11 +21,12 @@ export class PostuserController {
   findOne(@Param('id') id: string) {
     return this.postuserService.findOne(+id);
   }
-
+  /* 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePostuserDto: UpdatePostuserDto) {
     return this.postuserService.update(+id, updatePostuserDto);
   }
+ */
 
   @Delete(':id')
   remove(@Param('id') id: string) {
