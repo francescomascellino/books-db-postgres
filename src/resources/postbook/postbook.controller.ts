@@ -52,7 +52,14 @@ export class PostbookController {
 
   @Get('loans')
   async getloans() {
+    console.log('Finding all loaned Books');
     return this.postbookService.getLoans();
+  }
+
+  @Get('available')
+  availableBooks(): Promise<Postbook[]> {
+    console.log('Finding all avaiable Books');
+    return this.postbookService.availableBooks();
   }
 
   @Get(':id')

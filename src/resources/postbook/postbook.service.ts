@@ -387,8 +387,6 @@ export class PostbookService {
       loansMapped[username].books.push(loan.pbook.title);
     });
 
-    console.log('loans mapped', loansMapped);
-
     /* 
     Siccome i risultati mappati avranno questo aspetto:
     loans mapped {
@@ -416,5 +414,20 @@ export class PostbookService {
     const result = Object.values(loansMapped);
 
     return result;
+  }
+
+  async availableBooks(): Promise<Postbook[]> {
+    return (
+      this.postbookRepository
+        .createQueryBuilder('postbook') // Alias di Postbook
+        // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
+        .leftJoin(
+          PostuserPostbook,
+          'postuserPostbook', // Alias di PostuserPostbook
+          'postbook.id = postuserPostbook.pbook_id',
+        )
+        .where('postuserPostbook.pbook_id IS NULL')
+        .getMany()
+    );
   }
 }
