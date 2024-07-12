@@ -35,6 +35,7 @@ export class PostbookController {
     @Param('bookId') bookId: number,
     @Param('userId') userId: number,
   ) {
+    console.log(`Loaning Book with ID ${bookId} to User with ID ${userId}`);
     const result = await this.postbookService.borrowBook(bookId, userId);
     return result;
   }
@@ -44,6 +45,7 @@ export class PostbookController {
     @Param('bookId') bookId: number,
     @Param('userId') userId: number,
   ) {
+    console.log(`Returning Book with ID ${bookId} from User with ID ${userId}`);
     const result = await this.postbookService.returnBook(bookId, userId);
     return result;
   }

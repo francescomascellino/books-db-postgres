@@ -2248,6 +2248,8 @@ import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
 export class PostbookController {
   constructor(private readonly postbookService: PostbookService) {}
 
+  // Potremmo importare JwtAuthGuard per proteggere le rotte
+  // @UseGuards(JwtAuthGuard)
   @Get()
   findAll(): Promise<Postbook[]> {
     return this.postbookService.findAll();
@@ -2275,7 +2277,7 @@ Effettutiamo una chiamata POST a *http://localhost:3000/postbooks* inviando come
 }
 ```
 
-controlliamo adesso tramite terminale il database.
+Controlliamo adesso tramite terminale il database.
 Dopo aver installato globalmente psql eseguiamo:
 ```bash
 psql -U [USERNAME] -d [DB NAME]
