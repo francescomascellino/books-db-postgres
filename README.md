@@ -2985,3 +2985,91 @@ async returnBook(
     }
   }
 ```
+
+Metodo per ottenere i libri non in affitto:
+```ts
+async availableBooks(): Promise<Postbook[]> {
+    return (
+      this.postbookRepository
+        .createQueryBuilder('postbook') // Alias di Postbook
+        // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
+        .leftJoin(
+          PostuserPostbook,
+          'postuserPostbook', // Alias di PostuserPostbook
+          'postbook.id = postuserPostbook.pbook_id', // Associamo l'id del libro alla FK pbook_id
+        )
+        .where('postuserPostbook.pbook_id IS NULL')
+        .getMany()
+    );
+  }
+```
+
+Metodo per creare più libri dato un array di oggetti
+Creiamo un DTO che ci permetta di eseguire l'operazione
+***src\resources\postbook\dto\create-multiple-postbooks.dto.ts***
+```ts
+import { Type } from 'class-transformer';
+import { IsArray, ArrayMinSize, ValidateNested } from 'class-validator';
+import { CreatePostbookDto } from './create-postbook.dto';
+
+export class CreateMultiplePostbooksDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreatePostbookDto)
+  postbooks: CreatePostbookDto[]; // postbooks è un array di CreatePostbookDto e quindi ne segue le regole
+}
+```
+Questo metodo accetta un body della request simile a:
+```json
+{
+  "postbooks": [
+    {
+      "title": "Harry Potter e la Camera dei Segreti",
+      "author": "J.K. Rowling",
+      "ISBN": "9788877827022"
+    },
+    {
+      "title": "Harry Potter e il Prigioniero di Azkaban",
+      "author": "J.K. Rowling",
+      "ISBN": "9788877827023"
+    }
+  ]
+}
+```
+```ts
+async createMultiple(
+    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<Postbook[]> {
+    // Creiamo le istanze da salvare partendo dall'array createMultiplePostbooksDto.postbooks
+    const newPostbooks = this.postbookRepository.create(
+      createMultiplePostbooksDto.postbooks,
+    );
+
+    try {
+      // Salviamo le istanze
+      await this.postbookRepository.save(newPostbooks);
+    } catch (error) {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        throw new BadRequestException(error.message);
+      }
+      console.log(`Error: Failed to create the books.`);
+      throw new InternalServerErrorException('Failed to create the books.');
+    }
+
+    console.log(`New Books Created!`, newPostbooks);
+    return newPostbooks; // Ritorniamo i libri che abbiamo salvato come response
+  }
+```
+
+Iseriamo il metodo nel controller
+```ts
+@Post('bulk/create')
+  createMultiple(
+    @Body() createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<Postbook[]> {
+    console.log('Creating multiple Books');
+    return this.postbookService.createMultiple(createMultiplePostbooksDto);
+  }
+```

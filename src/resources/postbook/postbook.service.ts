@@ -435,11 +435,13 @@ export class PostbookService {
   async createMultiple(
     createMultiplePostbooksDto: CreateMultiplePostbooksDto,
   ): Promise<Postbook[]> {
+    // Creiamo le istanze da salvare partendo dall'array createMultiplePostbooksDto.postbooks
     const newPostbooks = this.postbookRepository.create(
       createMultiplePostbooksDto.postbooks,
     );
 
     try {
+      // Salviamo le istanze
       await this.postbookRepository.save(newPostbooks);
     } catch (error) {
       if (error) {
@@ -451,7 +453,7 @@ export class PostbookService {
     }
 
     console.log(`New Books Created!`, newPostbooks);
-    return newPostbooks;
+    return newPostbooks; // Ritorniamo i libri che abbiamo salvato come response
   }
 
   async softDeleteMultiple(bookIds: number[]): Promise<{
@@ -521,4 +523,16 @@ export class PostbookService {
 
     return { trashedBooks, errors };
   }
+
+  /*   async deleteMultiple(bookIds: number[]): Promise<void> {
+    const booksToDelete = await this.postbookRepository.find(({
+      where: { id: In(bookIds), is_deleted: false },
+    });
+
+    if (booksToDelete.length === 0) {
+      throw new NotFoundException('No books found with is_deleted=true');
+    }
+
+    await this.postbookRepository.remove(booksToDelete);
+  } */
 }
