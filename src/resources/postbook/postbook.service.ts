@@ -349,28 +349,69 @@ export class PostbookService {
       relations: ['pbook', 'puser'],
     });
 
-    // Utilizziamo un oggetto mappato per tenere traccia dei libri per ciascun utente
+    // Definiamo un oggetto che terrà traccia dei libri per ogni utente:
+    /* 
+      { 
+        Admin: {  username: 'Admin', 
+                  name: 'Admin', 
+                  books: [ 'TEST BOOK' ] 
+                },
+
+        User2: {  username: 'User2', 
+                  name: 'User2', 
+                  books: [ 'TEST BOOK 2' ] 
+                }
+                }
+     */
     const loansMapped: {
       [username: string]: { username: string; name: string; books: string[] };
     } = {};
 
     loans.forEach((loan) => {
+      // Recuperiamo il nome utente dal loan
       const username = loan.puser.username;
 
-      // Se l'utente non è ancora stato aggiunto all'oggetto mappato, inizializziamo l'oggetto
+      // Controlliamo se nel nostro oggetto l'utente che stiamo mappando non è presente
       if (!loansMapped[username]) {
+        // Se non è presente, lo aggiungiamo popolando i campi necessari
         loansMapped[username] = {
           username: loan.puser.username,
           name: loan.puser.name,
+          // books sarà un array di titoli
           books: [],
         };
       }
 
-      // Aggiungiamo il titolo del libro alla lista dei libri dell'utente
+      // In loans mapped, aggiungiamo all'indice dell'utente mappato nel loan atttuale il titolo del libro.
       loansMapped[username].books.push(loan.pbook.title);
     });
 
-    // Convertiamo l'oggetto mappato in un array di risultati
+    console.log('loans mapped', loansMapped);
+
+    /* 
+    Siccome i risultati mappati avranno questo aspetto:
+    loans mapped {
+      Admin: {
+        username: 'Admin',
+        name: 'Admin',
+        books: [ 'TEST BOOK', 'Il nome della rosa' ]
+      }
+    }
+    e a noi interessa convertirli in un formato più adatto come un array di oggetti
+    [
+      {
+          "username": "Admin",
+          "name": "Admin",
+          "books": [
+              "TEST BOOK",
+              "Il nome della rosa"
+          ]
+      }
+    ]
+
+    Convertiamo l'oggetto mappato in un array di risultati:
+    https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/values
+    */
     const result = Object.values(loansMapped);
 
     return result;
