@@ -11,6 +11,8 @@ import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
 import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
+import { CreateMultiplePostbooksDto } from './dto/create-multiple-postbooks.dto';
+import { DeleteMultiplePostbooksDto } from './dto/delete-multiple-books.dto';
 
 @Controller('postbooks')
 export class PostbookController {
@@ -28,6 +30,14 @@ export class PostbookController {
   create(@Body() createPostbookDto: CreatePostbookDto): Promise<Postbook> {
     console.log('Creating a new Book');
     return this.postbookService.create(createPostbookDto);
+  }
+
+  @Post('bulk/create')
+  createMultiple(
+    @Body() createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<Postbook[]> {
+    console.log('Creating multiple Books');
+    return this.postbookService.createMultiple(createMultiplePostbooksDto);
   }
 
   @Post(':bookId/burrow/:userId')
@@ -77,16 +87,26 @@ export class PostbookController {
     return this.postbookService.update(Number(id), updatePostbookDto);
   }
 
+  @Patch('delete/:id')
+  async softDelete(@Param('id') id: string) {
+    console.log(`Moving Book with id ${id} in the Recycle Bin`);
+    return this.postbookService.softDelete(Number(id));
+  }
+
   @Delete('delete/:id')
   async delete(@Param('id') id: string) {
     console.log(`Deleting Book with id ${id}`);
     return this.postbookService.delete(Number(id));
   }
 
-  @Patch('delete/:id')
-  async softDelete(@Param('id') id: string) {
-    console.log(`Moving Book with id ${id} in the Recycle Bin`);
-    return this.postbookService.softDelete(Number(id));
+  @Patch('bulk/trash')
+  async softDeleteMultiple(
+    @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Soft deleting multiple books');
+    return this.postbookService.softDeleteMultiple(
+      deleteMultiplePostbooksDto.bookIds,
+    );
   }
 
   @Patch('restore/:id')

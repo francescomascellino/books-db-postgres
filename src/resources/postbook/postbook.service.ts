@@ -11,6 +11,7 @@ import { UpdatePostbookDto } from './dto/update-postbook.dto';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Postuser } from '../postuser/entities/postuser.entity';
 import { PostuserPostbook } from '../postuser_postbook/entities/postuser_postbook.entity';
+import { CreateMultiplePostbooksDto } from './dto/create-multiple-postbooks.dto';
 @Injectable()
 export class PostbookService {
   constructor(
@@ -429,5 +430,95 @@ export class PostbookService {
         .where('postuserPostbook.pbook_id IS NULL')
         .getMany()
     );
+  }
+
+  async createMultiple(
+    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<Postbook[]> {
+    const newPostbooks = this.postbookRepository.create(
+      createMultiplePostbooksDto.postbooks,
+    );
+
+    try {
+      await this.postbookRepository.save(newPostbooks);
+    } catch (error) {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        throw new BadRequestException(error.message);
+      }
+      console.log(`Error: Failed to create the books.`);
+      throw new InternalServerErrorException('Failed to create the books.');
+    }
+
+    console.log(`New Books Created!`, newPostbooks);
+    return newPostbooks;
+  }
+
+  async softDeleteMultiple(bookIds: number[]): Promise<{
+    trashedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const trashedBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: false },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found or already deleted`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found or already deleted`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        // Controlla se il libro è in prestito (ha una relazione con un utente e quindi si trova nella tabella puser_pbook)
+        const userPostbook = await this.postuserPostbookRepository.findOne({
+          where: { pbook_id: id },
+        });
+
+        if (userPostbook) {
+          console.log(
+            `Book with ID ${id} is currently rented and cannot be trashed`,
+          );
+          errors.push({
+            id,
+            error: `Book with ID ${id} is currently rented and cannot be trashed`,
+          });
+          continue;
+        }
+
+        book.is_deleted = true;
+
+        await this.postbookRepository.save(book);
+        console.log(
+          `Book ${book.title} with ID ${id} soft deleted successfully`,
+        );
+        trashedBooks.push(book);
+      } catch (error) {
+        console.error(
+          `Error soft deleting book with ID ${id}: ${error.message}`,
+        );
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to soft delete the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error soft deleting book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { trashedBooks, errors };
   }
 }

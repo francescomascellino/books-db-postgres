@@ -5,9 +5,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   OneToMany,
+  Unique,
 } from 'typeorm';
 
 @Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
+@Unique(['ISBN'])
 export class Postbook {
   @PrimaryGeneratedColumn()
   id: number;
