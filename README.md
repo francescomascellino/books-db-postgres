@@ -2773,7 +2773,19 @@ export class PostuserPostbook {
 }
 ```
 
-Successivamente creiamo un metodo che usi queste relazioni per ottenere i libri presi in prestito
+Usando metodi simi a questo possiamo accdere alle relazioni:
+```ts
+const relations = await this.postuserPostbookRepository.find({
+      relations: ['pbook', 'puser'],
+      where: {
+        // Passeremo userId e bookId come variabili parametro della query
+        puser: { id: userId },
+        pbook: { id: bookId },
+      },
+    });
+```
+
+Creiamo un metodo che usi queste relazioni per ottenere i libri presi in prestito
 ***src\resources\postbook\postbook.service.ts***
 ```ts
 async getLoans(): Promise<
@@ -2849,5 +2861,125 @@ async getLoans(): Promise<
     const result = Object.values(loansMapped);
 
     return result;
+  }
+```
+
+Metodo per assegnare un libro a un utente
+```ts
+async borrowBook(bookId: number, userId: number) {
+    // Cerca il libro dal repository dei libri
+    const book = await this.postbookRepository.findOne({
+      where: { id: bookId, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${bookId} not found`);
+      throw new NotFoundException(`Book with ID ${bookId} not found`);
+    }
+
+    // Cerca l'utente dal repository degli utenti
+    const user = await this.postuserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      console.log(`User with ID ${userId} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Verifica se esiste già un record con la stessa combinazione di utente e libro
+    const existingRecord = await this.postuserPostbookRepository.findOne({
+      where: {
+        puser: { id: userId },
+        pbook: { id: bookId },
+      },
+    });
+
+    if (existingRecord) {
+      console.log(
+        `Book with ID ${bookId} is already assigned to user with ID ${userId}`,
+      );
+
+      throw new BadRequestException(
+        `Book with ID ${bookId} is already assigned to user with ID ${userId}`,
+        // Nella realtà invieremo un messaggio che non espone l'id dell'utente
+      );
+    }
+
+    // Crea la relazione PostuserPostbook
+    const newPostuserPostbook = new PostuserPostbook();
+    newPostuserPostbook.puser = user;
+    newPostuserPostbook.pbook = book;
+
+    try {
+      // Salva la nuova relazione nel repository PostuserPostbook
+      await this.postuserPostbookRepository.save(newPostuserPostbook);
+      console.log(`Book "${book.title}" assigned to user "${user.username}"`);
+
+      return {
+        message: `Book ${newPostuserPostbook.pbook.title} succeffully assigned to User ${newPostuserPostbook.puser.username}`,
+      };
+    } catch (error) {
+      console.error(`Error assigning book to user: ${error.message}`);
+      throw new InternalServerErrorException('Failed to assign book to user');
+    }
+  }
+```
+
+Metodo per restiture un libro
+```ts
+async returnBook(
+    bookId: number,
+    userId: number,
+  ): Promise<{ message: string }> {
+    // Cerca il libro dal repository dei libri
+    const book = await this.postbookRepository.findOne({
+      where: { id: bookId, is_deleted: false },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${bookId} not found`);
+      throw new NotFoundException(`Book with ID ${bookId} not found`);
+    }
+
+    // Cerca l'utente dal repository degli utenti
+    const user = await this.postuserRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      console.log(`User with ID ${userId} not found`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Cerca la relazione PostuserPostbook esistente
+    const existingRecord = await this.postuserPostbookRepository.findOne({
+      where: {
+        puser: { id: userId },
+        pbook: { id: bookId },
+      },
+    });
+
+    if (!existingRecord) {
+      console.log(
+        `No loan record found for book ID ${bookId} and user ID ${userId}`,
+      );
+      throw new NotFoundException(
+        `No loan record found for book ID ${bookId} and user ID ${userId}`,
+      );
+    }
+
+    try {
+      // Rimuove la relazione esistente dal repository PostuserPostbook
+      await this.postuserPostbookRepository.remove(existingRecord);
+      console.log(`Book "${book.title}" returned by user "${user.username}"`);
+
+      return {
+        message: `Book ${book.title} successfully returned by User ${user.username}`,
+      };
+    } catch (error) {
+      console.error(`Error returning book from user: ${error.message}`);
+      throw new InternalServerErrorException('Failed to return book from user');
+    }
   }
 ```

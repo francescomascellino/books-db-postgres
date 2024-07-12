@@ -265,10 +265,11 @@ export class PostbookService {
 
       throw new BadRequestException(
         `Book with ID ${bookId} is already assigned to user with ID ${userId}`,
+        // Nella realtà invieremo un messaggio che non espone l'id dell'utente
       );
     }
 
-    // Creazione della relazione PostuserPostbook
+    // Crea la relazione PostuserPostbook
     const newPostuserPostbook = new PostuserPostbook();
     newPostuserPostbook.puser = user;
     newPostuserPostbook.pbook = book;
@@ -329,7 +330,7 @@ export class PostbookService {
     }
 
     try {
-      // Rimuovi la relazione esistente dal repository PostuserPostbook
+      // Rimuove la relazione esistente dal repository PostuserPostbook
       await this.postuserPostbookRepository.remove(existingRecord);
       console.log(`Book "${book.title}" returned by user "${user.username}"`);
 
