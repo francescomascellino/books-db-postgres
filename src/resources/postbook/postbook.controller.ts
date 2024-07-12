@@ -16,6 +16,8 @@ import { UpdatePostbookDto } from './dto/update-postbook.dto';
 export class PostbookController {
   constructor(private readonly postbookService: PostbookService) {}
 
+  // Possiamo importare JwtAuthGuard per proteggere le rotte
+  // @UseGuards(JwtAuthGuard)
   @Get()
   findAll(): Promise<Postbook[]> {
     console.log('Finding all Books');
