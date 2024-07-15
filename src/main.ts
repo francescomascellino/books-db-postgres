@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +22,16 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Books example API')
+    .setDescription('The Books API')
+    .setVersion('1.0')
+    .addTag('books')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('bookapi', app, document);
+
   await app.listen(3000);
 }
 bootstrap();

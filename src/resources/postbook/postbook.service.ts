@@ -635,7 +635,10 @@ export class PostbookService {
     return { deletedBooks, errors };
   }
 
+  // TROVARE MODO PER INSERIRE LA PAGINAZIONE SENZA RIPETERE CODICE
+
   createPaginationLinks(page: number, pageSize: number, totalPages: number) {
+    // TROVARE MODO PER ESTRARRE URL DALLA REQUEST
     // const totalPages = Math.ceil(total / pageSize);
     // console.log(req);
 
