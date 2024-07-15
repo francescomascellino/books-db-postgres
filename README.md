@@ -3082,6 +3082,173 @@ Iseriamo il metodo nel controller
   }
 ```
 
+Ottenere tutti i libri nel cestino (esempiod i metodo con query builder)
+```ts
+async trashedBooks(): Promise<Postbook[]> {
+    return this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      .where('postbook.is_deleted IS TRUE')
+      .getMany();
+  }
+```
+
+Senza query builder:
+```ts
+async trashedBooks(): Promise<Postbook[]> {
+    // return this.postbookRepository.find();
+    return await this.postbookRepository.find({
+      where: { is_deleted: false },
+    });
+  }
+```
+
+Spostare nel cestino più libri:
+```ts
+async softDeleteMultiple(bookIds: number[]): Promise<{
+    trashedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const trashedBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: false },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found or already deleted`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found or already deleted`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        // Controlla se il libro è in prestito (ha una relazione con un utente e quindi si trova nella tabella puser_pbook)
+        const userPostbook = await this.postuserPostbookRepository.findOne({
+          where: { pbook_id: id },
+        });
+
+        if (userPostbook) {
+          console.log(
+            `Book with ID ${id} is currently rented and cannot be trashed`,
+          );
+          errors.push({
+            id,
+            error: `Book with ID ${id} is currently rented and cannot be trashed`,
+          });
+          continue;
+        }
+
+        book.is_deleted = true;
+
+        await this.postbookRepository.save(book);
+        console.log(
+          `Book ${book.title} with ID ${id} soft deleted successfully`,
+        );
+        trashedBooks.push(book);
+      } catch (error) {
+        console.error(
+          `Error soft deleting book with ID ${id}: ${error.message}`,
+        );
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to soft delete the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error soft deleting book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { trashedBooks, errors };
+  }
+```
+Nel Controller:
+```ts
+@Patch('bulk/trash')
+  async softDeleteMultiple(
+    @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Soft deleting multiple books');
+    return this.postbookService.softDeleteMultiple(
+      deleteMultiplePostbooksDto.bookIds,
+    );
+  }
+```
+
+Ripristinare più libri
+```ts
+async restoreMultiple(bookIds: number[]): Promise<{
+    restoredBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const restoredBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: true },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found or not in the Recycle Bin`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        book.is_deleted = false;
+
+        await this.postbookRepository.save(book);
+        console.log(`Book ${book.title} with ID ${id} restored successfully`);
+        restoredBooks.push(book);
+      } catch (error) {
+        console.error(`Error restoring book with ID ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to restore the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error soft restoring book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { restoredBooks, errors };
+  }
+```
+Nel Controller:
+```ts
+@Patch('bulk/restore')
+  async restoreMultiple(
+    @Body() restoreMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Restoring multiple books');
+    return this.postbookService.restoreMultiple(
+      restoreMultiplePostbooksDto.bookIds,
+    );
+  }
+```
+
+Eliminare definitivamente più libri:
 ```ts
 async deleteMultipleBooks(bookIds: number[]): Promise<{
     deletedBooks: Postbook[];
@@ -3130,23 +3297,15 @@ async deleteMultipleBooks(bookIds: number[]): Promise<{
     return { deletedBooks, errors };
   }
 ```
-
-Ottenere tutti i libri nel cestino (esempiod i metodo con query builder)
+Nel Controller:
 ```ts
-async trashedBooks(): Promise<Postbook[]> {
-    return this.postbookRepository
-      .createQueryBuilder('postbook') // Alias di Postbook
-      .where('postbook.is_deleted IS TRUE')
-      .getMany();
-  }
-```
-
-Senza query builder:
-```ts
-async trashedBooks(): Promise<Postbook[]> {
-    // return this.postbookRepository.find();
-    return await this.postbookRepository.find({
-      where: { is_deleted: false },
-    });
+@Delete('bulk/delete')
+  async deleteMultipleBooks(
+    @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Deleting multiple books');
+    return this.postbookService.deleteMultipleBooks(
+      deleteMultiplePostbooksDto.bookIds,
+    );
   }
 ```

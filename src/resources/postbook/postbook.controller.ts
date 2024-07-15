@@ -115,6 +115,16 @@ export class PostbookController {
     );
   }
 
+  @Patch('bulk/restore')
+  async restoreMultiple(
+    @Body() restoreMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Restoring multiple books');
+    return this.postbookService.restoreMultiple(
+      restoreMultiplePostbooksDto.bookIds,
+    );
+  }
+
   @Delete('bulk/delete')
   async deleteMultipleBooks(
     @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,

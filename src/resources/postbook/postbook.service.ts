@@ -26,13 +26,6 @@ export class PostbookService {
     private postuserPostbookRepository: Repository<PostuserPostbook>,
   ) {}
 
-  async findAll(): Promise<Postbook[]> {
-    // return this.postbookRepository.find();
-    return await this.postbookRepository.find({
-      where: { is_deleted: false },
-    });
-  }
-
   async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {
     const newPostbook = this.postbookRepository.create(createPostbookDto);
 
@@ -52,6 +45,37 @@ export class PostbookService {
     return newPostbook;
   }
 
+  async createMultiple(
+    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<Postbook[]> {
+    // Creiamo le istanze da salvare partendo dall'array createMultiplePostbooksDto.postbooks
+    const newPostbooks = this.postbookRepository.create(
+      createMultiplePostbooksDto.postbooks,
+    );
+
+    try {
+      // Salviamo le istanze
+      await this.postbookRepository.save(newPostbooks);
+    } catch (error) {
+      if (error) {
+        console.log(`Error: ${error.message}`);
+        throw new BadRequestException(error.message);
+      }
+      console.log(`Error: Failed to create the books.`);
+      throw new InternalServerErrorException('Failed to create the books.');
+    }
+
+    console.log(`New Books Created!`, newPostbooks);
+    return newPostbooks; // Ritorniamo i libri che abbiamo salvato come response
+  }
+
+  async findAll(): Promise<Postbook[]> {
+    // return this.postbookRepository.find();
+    return await this.postbookRepository.find({
+      where: { is_deleted: false },
+    });
+  }
+
   async findOne(id: number): Promise<Postbook> {
     const book = await this.postbookRepository.findOne({
       where: { id, is_deleted: false },
@@ -65,6 +89,103 @@ export class PostbookService {
     console.log(`Book found: ${book.title}`);
 
     return book;
+  }
+
+  async availableBooks(): Promise<Postbook[]> {
+    return (
+      this.postbookRepository
+        .createQueryBuilder('postbook') // Alias di Postbook
+        // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
+        .leftJoin(
+          PostuserPostbook,
+          'postuserPostbook', // Alias di PostuserPostbook
+          'postbook.id = postuserPostbook.pbook_id',
+        )
+        .where(
+          'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
+        )
+        .getMany()
+    );
+  }
+
+  async getLoans(): Promise<
+    { username: string; name: string; books: string[] }[]
+  > {
+    const loans = await this.postuserPostbookRepository.find({
+      relations: ['pbook', 'puser'],
+    });
+
+    // Definiamo un oggetto che terrà traccia dei libri per ogni utente:
+    /* 
+      { 
+        Admin: {  username: 'Admin', 
+                  name: 'Admin', 
+                  books: [ 'TEST BOOK' ] 
+                },
+
+        User2: {  username: 'User2', 
+                  name: 'User2', 
+                  books: [ 'TEST BOOK 2' ] 
+                }
+                }
+     */
+    const loansMapped: {
+      [username: string]: { username: string; name: string; books: string[] };
+    } = {};
+
+    loans.forEach((loan) => {
+      // Recuperiamo il nome utente dal loan
+      const username = loan.puser.username;
+
+      // Controlliamo se nel nostro oggetto l'utente che stiamo mappando non è presente
+      if (!loansMapped[username]) {
+        // Se non è presente, lo aggiungiamo popolando i campi necessari
+        loansMapped[username] = {
+          username: loan.puser.username,
+          name: loan.puser.name,
+          // books sarà un array di titoli
+          books: [],
+        };
+      }
+
+      // In loans mapped, aggiungiamo all'indice dell'utente mappato nel loan atttuale il titolo del libro.
+      loansMapped[username].books.push(loan.pbook.title);
+    });
+
+    /* 
+    Siccome i risultati mappati avranno questo aspetto:
+    loans mapped {
+      Admin: {
+        username: 'Admin',
+        name: 'Admin',
+        books: [ 'TEST BOOK', 'Il nome della rosa' ]
+      }
+    }
+    e a noi interessa convertirli in un formato più adatto come un array di oggetti
+    [
+      {
+          "username": "Admin",
+          "name": "Admin",
+          "books": [
+              "TEST BOOK",
+              "Il nome della rosa"
+          ]
+      }
+    ]
+
+    Convertiamo l'oggetto mappato in un array di risultati:
+    https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/values
+    */
+    const result = Object.values(loansMapped);
+
+    return result;
+  }
+
+  async trashedBooks(): Promise<Postbook[]> {
+    return this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      .where('postbook.is_deleted IS TRUE')
+      .getMany();
   }
 
   async update(
@@ -102,133 +223,6 @@ export class PostbookService {
     );
 
     return recordToUpdate;
-  }
-
-  async delete(id: number) {
-    // Cerchiamo il Libro da eliminare
-    const book = await this.postbookRepository.findOne({
-      // Eliminiamo solo i libri nel "cestino"
-      where: { id, is_deleted: true },
-    });
-
-    if (!book) {
-      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
-      throw new NotFoundException(
-        `Book with ID ${id} not found or not in the Recycle Bin`,
-      );
-    }
-
-    console.log(`Found ${book.title}`);
-
-    try {
-      // Elimina il libro dal database
-      await this.postbookRepository.remove(book);
-
-      console.log(`Book ${book.title} with ID ${id} deleted successfully`);
-
-      return {
-        message: `Book ${book.title} with ID ${id} deleted successfully`,
-      };
-    } catch (error) {
-      if (error) {
-        console.log(`Error deleting book with ID ${id}: ${error.message}`);
-
-        throw new BadRequestException(
-          `Error deleting book with ID ${id}: ${error.message}`,
-        );
-      }
-
-      if (error instanceof QueryFailedError) {
-        throw new BadRequestException(
-          'Failed to delete the book due to a database error.',
-        );
-      }
-
-      throw new InternalServerErrorException('Failed to delete the book.');
-    }
-  }
-
-  async softDelete(id: number): Promise<{ message: string }> {
-    const book = await this.postbookRepository.findOne({
-      where: { id, is_deleted: false },
-    });
-
-    if (!book) {
-      console.log(`Book with ID ${id} not found or already deleted`);
-
-      throw new NotFoundException(
-        `Book with ID ${id} not found or already deleted`,
-      );
-    }
-
-    console.log(`Found ${book.title}`);
-
-    // Aggiorniamo il campo is_deleted su true
-    book.is_deleted = true;
-
-    try {
-      // salviamo il libro
-      await this.postbookRepository.save(book);
-
-      console.log(`Book ${book.title} with ID ${id} soft deleted successfully`);
-
-      return {
-        message: `Book ${book.title} with ID ${id} soft deleted successfully`,
-      };
-    } catch (error) {
-      console.error(`Error soft deleting book with ID ${id}: ${error.message}`);
-
-      if (error instanceof QueryFailedError) {
-        throw new BadRequestException(
-          'Failed to soft delete the book due to a database error.',
-        );
-      }
-
-      throw new InternalServerErrorException('Failed to soft delete the book.');
-    }
-  }
-
-  async restore(id: number): Promise<{ message: string }> {
-    const book = await this.postbookRepository.findOne({
-      // Possiamo ripristinare solo i libri nel "cestino"
-      where: { id, is_deleted: true },
-    });
-
-    if (!book) {
-      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
-
-      throw new NotFoundException(
-        `Book with ID ${id} not found or not in the Recycle Bin`,
-      );
-    }
-
-    console.log(`Found ${book.title}`);
-
-    // Aggiorniamo il campo is_deleted su true
-    book.is_deleted = false;
-
-    try {
-      // salviamo il libro
-      await this.postbookRepository.save(book);
-
-      console.log(`Book ${book.title} with ID ${id} restored successfully`);
-
-      return {
-        message: `Book ${book.title} with ID ${id} restored successfully`,
-      };
-    } catch (error) {
-      console.error(
-        `Error soft restoring book with ID ${id}: ${error.message}`,
-      );
-
-      if (error instanceof QueryFailedError) {
-        throw new BadRequestException(
-          'Failed to restore the book due to a database error.',
-        );
-      }
-
-      throw new InternalServerErrorException('Failed to soft delete the book.');
-    }
   }
 
   async borrowBook(bookId: number, userId: number) {
@@ -351,125 +345,44 @@ export class PostbookService {
     }
   }
 
-  async getLoans(): Promise<
-    { username: string; name: string; books: string[] }[]
-  > {
-    const loans = await this.postuserPostbookRepository.find({
-      relations: ['pbook', 'puser'],
+  async softDelete(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
     });
 
-    // Definiamo un oggetto che terrà traccia dei libri per ogni utente:
-    /* 
-      { 
-        Admin: {  username: 'Admin', 
-                  name: 'Admin', 
-                  books: [ 'TEST BOOK' ] 
-                },
+    if (!book) {
+      console.log(`Book with ID ${id} not found or already deleted`);
 
-        User2: {  username: 'User2', 
-                  name: 'User2', 
-                  books: [ 'TEST BOOK 2' ] 
-                }
-                }
-     */
-    const loansMapped: {
-      [username: string]: { username: string; name: string; books: string[] };
-    } = {};
-
-    loans.forEach((loan) => {
-      // Recuperiamo il nome utente dal loan
-      const username = loan.puser.username;
-
-      // Controlliamo se nel nostro oggetto l'utente che stiamo mappando non è presente
-      if (!loansMapped[username]) {
-        // Se non è presente, lo aggiungiamo popolando i campi necessari
-        loansMapped[username] = {
-          username: loan.puser.username,
-          name: loan.puser.name,
-          // books sarà un array di titoli
-          books: [],
-        };
-      }
-
-      // In loans mapped, aggiungiamo all'indice dell'utente mappato nel loan atttuale il titolo del libro.
-      loansMapped[username].books.push(loan.pbook.title);
-    });
-
-    /* 
-    Siccome i risultati mappati avranno questo aspetto:
-    loans mapped {
-      Admin: {
-        username: 'Admin',
-        name: 'Admin',
-        books: [ 'TEST BOOK', 'Il nome della rosa' ]
-      }
+      throw new NotFoundException(
+        `Book with ID ${id} not found or already deleted`,
+      );
     }
-    e a noi interessa convertirli in un formato più adatto come un array di oggetti
-    [
-      {
-          "username": "Admin",
-          "name": "Admin",
-          "books": [
-              "TEST BOOK",
-              "Il nome della rosa"
-          ]
-      }
-    ]
 
-    Convertiamo l'oggetto mappato in un array di risultati:
-    https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/values
-    */
-    const result = Object.values(loansMapped);
+    console.log(`Found ${book.title}`);
 
-    return result;
-  }
-
-  async availableBooks(): Promise<Postbook[]> {
-    return (
-      this.postbookRepository
-        .createQueryBuilder('postbook') // Alias di Postbook
-        // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
-        .leftJoin(
-          PostuserPostbook,
-          'postuserPostbook', // Alias di PostuserPostbook
-          'postbook.id = postuserPostbook.pbook_id',
-        )
-        .where(
-          'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
-        )
-        .getMany()
-    );
-  }
-
-  async trashedBooks(): Promise<Postbook[]> {
-    return this.postbookRepository
-      .createQueryBuilder('postbook') // Alias di Postbook
-      .where('postbook.is_deleted IS TRUE')
-      .getMany();
-  }
-
-  async createMultiple(
-    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
-  ): Promise<Postbook[]> {
-    // Creiamo le istanze da salvare partendo dall'array createMultiplePostbooksDto.postbooks
-    const newPostbooks = this.postbookRepository.create(
-      createMultiplePostbooksDto.postbooks,
-    );
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = true;
 
     try {
-      // Salviamo le istanze
-      await this.postbookRepository.save(newPostbooks);
-    } catch (error) {
-      if (error) {
-        console.log(`Error: ${error.message}`);
-        throw new BadRequestException(error.message);
-      }
-      console.log(`Error: Failed to create the books.`);
-      throw new InternalServerErrorException('Failed to create the books.');
-    }
+      // salviamo il libro
+      await this.postbookRepository.save(book);
 
-    console.log(`New Books Created!`, newPostbooks);
-    return newPostbooks; // Ritorniamo i libri che abbiamo salvato come response
+      console.log(`Book ${book.title} with ID ${id} soft deleted successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} soft deleted successfully`,
+      };
+    } catch (error) {
+      console.error(`Error soft deleting book with ID ${id}: ${error.message}`);
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to soft delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
+    }
   }
 
   async softDeleteMultiple(bookIds: number[]): Promise<{
@@ -540,17 +453,140 @@ export class PostbookService {
     return { trashedBooks, errors };
   }
 
-  /*   async deleteMultiple(bookIds: number[]): Promise<void> {
-    const booksToDelete = await this.postbookRepository.find(({
-      where: { id: In(bookIds), is_deleted: true },
+  async restore(id: number): Promise<{ message: string }> {
+    const book = await this.postbookRepository.findOne({
+      // Possiamo ripristinare solo i libri nel "cestino"
+      where: { id, is_deleted: true },
     });
 
-    if (booksToDelete.length === 0) {
-      throw new NotFoundException('No books found with is_deleted=true');
+    if (!book) {
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
     }
 
-    await this.postbookRepository.remove(booksToDelete);
-  } */
+    console.log(`Found ${book.title}`);
+
+    // Aggiorniamo il campo is_deleted su true
+    book.is_deleted = false;
+
+    try {
+      // salviamo il libro
+      await this.postbookRepository.save(book);
+
+      console.log(`Book ${book.title} with ID ${id} restored successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} restored successfully`,
+      };
+    } catch (error) {
+      console.error(
+        `Error soft restoring book with ID ${id}: ${error.message}`,
+      );
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to restore the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to soft delete the book.');
+    }
+  }
+
+  async restoreMultiple(bookIds: number[]): Promise<{
+    restoredBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const restoredBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: true },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found or not in the Recycle Bin`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        book.is_deleted = false;
+
+        await this.postbookRepository.save(book);
+        console.log(`Book ${book.title} with ID ${id} restored successfully`);
+        restoredBooks.push(book);
+      } catch (error) {
+        console.error(`Error restoring book with ID ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to restore the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error soft restoring book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { restoredBooks, errors };
+  }
+
+  async delete(id: number) {
+    // Cerchiamo il Libro da eliminare
+    const book = await this.postbookRepository.findOne({
+      // Eliminiamo solo i libri nel "cestino"
+      where: { id, is_deleted: true },
+    });
+
+    if (!book) {
+      console.log(`Book with ID ${id} not found or not in the Recycle Bin`);
+      throw new NotFoundException(
+        `Book with ID ${id} not found or not in the Recycle Bin`,
+      );
+    }
+
+    console.log(`Found ${book.title}`);
+
+    try {
+      // Elimina il libro dal database
+      await this.postbookRepository.remove(book);
+
+      console.log(`Book ${book.title} with ID ${id} deleted successfully`);
+
+      return {
+        message: `Book ${book.title} with ID ${id} deleted successfully`,
+      };
+    } catch (error) {
+      if (error) {
+        console.log(`Error deleting book with ID ${id}: ${error.message}`);
+
+        throw new BadRequestException(
+          `Error deleting book with ID ${id}: ${error.message}`,
+        );
+      }
+
+      if (error instanceof QueryFailedError) {
+        throw new BadRequestException(
+          'Failed to delete the book due to a database error.',
+        );
+      }
+
+      throw new InternalServerErrorException('Failed to delete the book.');
+    }
+  }
 
   async deleteMultipleBooks(bookIds: number[]): Promise<{
     deletedBooks: Postbook[];
