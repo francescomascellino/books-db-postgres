@@ -441,6 +441,13 @@ export class PostbookService {
     );
   }
 
+  async trashedBooks(): Promise<Postbook[]> {
+    return this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      .where('postbook.is_deleted IS TRUE')
+      .getMany();
+  }
+
   async createMultiple(
     createMultiplePostbooksDto: CreateMultiplePostbooksDto,
   ): Promise<Postbook[]> {

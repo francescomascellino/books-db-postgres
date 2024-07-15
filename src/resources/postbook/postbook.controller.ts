@@ -72,6 +72,12 @@ export class PostbookController {
     return this.postbookService.availableBooks();
   }
 
+  @Get('trashed')
+  trashedBooks(): Promise<Postbook[]> {
+    console.log('Finding all Books in the Recycle Bin');
+    return this.postbookService.trashedBooks();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string): Promise<Postbook> {
     console.log(`Finding Book with id ${id}`);
@@ -113,7 +119,7 @@ export class PostbookController {
   async deleteMultipleBooks(
     @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,
   ) {
-    console.log('Soft deleting multiple books');
+    console.log('Deleting multiple books');
     return this.postbookService.deleteMultipleBooks(
       deleteMultiplePostbooksDto.bookIds,
     );

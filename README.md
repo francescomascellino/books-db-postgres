@@ -3130,3 +3130,23 @@ async deleteMultipleBooks(bookIds: number[]): Promise<{
     return { deletedBooks, errors };
   }
 ```
+
+Ottenere tutti i libri nel cestino (esempiod i metodo con query builder)
+```ts
+async trashedBooks(): Promise<Postbook[]> {
+    return this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      .where('postbook.is_deleted IS TRUE')
+      .getMany();
+  }
+```
+
+Senza query builder:
+```ts
+async trashedBooks(): Promise<Postbook[]> {
+    // return this.postbookRepository.find();
+    return await this.postbookRepository.find({
+      where: { is_deleted: false },
+    });
+  }
+```
