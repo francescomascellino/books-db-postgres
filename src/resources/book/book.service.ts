@@ -104,7 +104,7 @@ export class BookService {
   ): Promise<PaginateResult<BookDocument>> {
     console.log(`Find all Books - Page: ${page}, PageSize: ${pageSize}`);
 
-    // SEPERIAMOI FILTRI DA options PER NON ANDARE IN CONFLITTO CON PAGNINATE
+    // SEPARIAMO FILTRI DA options PER NON ANDARE IN CONFLITTO CON PAGNINATE
     const filter = {
       $or: [{ is_deleted: { $exists: false } }, { is_deleted: false }],
     };

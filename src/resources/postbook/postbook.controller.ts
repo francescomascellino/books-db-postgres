@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { PostbookService } from './postbook.service';
 import { Postbook } from './entities/postbook.entity';
@@ -57,6 +58,28 @@ export class PostbookController {
   ) {
     console.log(`Returning Book with ID ${bookId} from User with ID ${userId}`);
     const result = await this.postbookService.returnBook(bookId, userId);
+    return result;
+  }
+
+  @Get('paginate')
+  async getPaginatedBooks(
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+  ): Promise<{
+    data: Postbook[];
+    total: number;
+    page: number;
+    pageSize: number;
+    links: any;
+  }> {
+    console.log(`Find all Books - Page: ${page}, PageSize: ${pageSize}`);
+    const pageNumber = page ? Number(page) : 1;
+    const pageSizeNumber = pageSize ? Number(pageSize) : 10;
+
+    const result = await this.postbookService.paginateAll(
+      pageNumber,
+      pageSizeNumber,
+    );
     return result;
   }
 

@@ -634,4 +634,57 @@ export class PostbookService {
 
     return { deletedBooks, errors };
   }
+
+  createPaginationLinks(page: number, pageSize: number, totalPages: number) {
+    // const totalPages = Math.ceil(total / pageSize);
+    // console.log(req);
+
+    return {
+      first: `postbooks/paginate?page=1&pageSize=${pageSize}`,
+      prev:
+        page > 1
+          ? `postbooks/paginate?page=${page - 1}&pageSize=${pageSize}`
+          : null,
+      next:
+        page < totalPages
+          ? `/postbooks/paginate?page=${page + 1}&pageSize=${pageSize}`
+          : null,
+      last: `postbooks/paginate?page=${totalPages}&pageSize=${pageSize}`,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    };
+  }
+
+  async paginateAll(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<{
+    data: Postbook[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    links: object;
+  }> {
+    const [data, total] = await this.postbookRepository.findAndCount({
+      // skip: Offset (paginated) where from entities should be taken.
+      // Ovvvero a pagina 1 vengono saltati 0 elementi
+      // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
+      skip: page > 0 ? (page - 1) * pageSize : 0,
+      take: pageSize,
+    });
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    const links = this.createPaginationLinks(page, pageSize, totalPages);
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages,
+      links,
+    };
+  }
 }
