@@ -2897,6 +2897,7 @@ async borrowBook(bookId: number, userId: number) {
       },
     });
 
+    // Se il libro è già assegnato all'utente che lo richiede
     if (existingRecord) {
       console.log(
         `Book with ID ${bookId} is already assigned to user with ID ${userId}`,
@@ -2922,13 +2923,18 @@ async borrowBook(bookId: number, userId: number) {
         message: `Book ${newPostuserPostbook.pbook.title} succeffully assigned to User ${newPostuserPostbook.puser.username}`,
       };
     } catch (error) {
+      // Codice di PostgreSQL di violazione chiave unica
+      if (error.code === '23505') {
+        throw new BadRequestException(`Book ${book.title} already on loan`);
+      }
+
       console.error(`Error assigning book to user: ${error.message}`);
       throw new InternalServerErrorException('Failed to assign book to user');
     }
   }
 ```
 
-Metodo per restiture un libro
+Metodo per restituire un libro
 ```ts
 async returnBook(
     bookId: number,
