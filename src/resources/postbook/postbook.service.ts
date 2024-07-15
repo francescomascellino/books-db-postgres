@@ -434,7 +434,9 @@ export class PostbookService {
           'postuserPostbook', // Alias di PostuserPostbook
           'postbook.id = postuserPostbook.pbook_id',
         )
-        .where('postuserPostbook.pbook_id IS NULL')
+        .where(
+          'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
+        )
         .getMany()
     );
   }
@@ -533,7 +535,7 @@ export class PostbookService {
 
   /*   async deleteMultiple(bookIds: number[]): Promise<void> {
     const booksToDelete = await this.postbookRepository.find(({
-      where: { id: In(bookIds), is_deleted: false },
+      where: { id: In(bookIds), is_deleted: true },
     });
 
     if (booksToDelete.length === 0) {
@@ -542,4 +544,51 @@ export class PostbookService {
 
     await this.postbookRepository.remove(booksToDelete);
   } */
+
+  async deleteMultipleBooks(bookIds: number[]): Promise<{
+    deletedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const deletedBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: true },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found in the Recycle Bin`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found in the Recycle Bin`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        await this.postbookRepository.remove(book);
+
+        console.log(`Book ${book.title} with ID ${id} deleted successfully`);
+        deletedBooks.push(book);
+      } catch (error) {
+        console.error(`Error deleting book with ID ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to delete the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error deleting book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { deletedBooks, errors };
+  }
 }

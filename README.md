@@ -3004,7 +3004,9 @@ async availableBooks(): Promise<Postbook[]> {
           'postuserPostbook', // Alias di PostuserPostbook
           'postbook.id = postuserPostbook.pbook_id', // Associamo l'id del libro alla FK pbook_id
         )
-        .where('postuserPostbook.pbook_id IS NULL')
+        .where(
+          'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE', // Non vogliamo vedere i libri nel cestino
+        )
         .getMany()
     );
   }
@@ -3077,5 +3079,54 @@ Iseriamo il metodo nel controller
   ): Promise<Postbook[]> {
     console.log('Creating multiple Books');
     return this.postbookService.createMultiple(createMultiplePostbooksDto);
+  }
+```
+
+```ts
+async deleteMultipleBooks(bookIds: number[]): Promise<{
+    deletedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const deletedBooks = [];
+    const errors = [];
+
+    for (const id of bookIds) {
+      try {
+        const book = await this.postbookRepository.findOne({
+          where: { id, is_deleted: true },
+        });
+
+        if (!book) {
+          console.log(`Book with ID ${id} not found in the Recycle Bin`);
+          errors.push({
+            id,
+            error: `Book with ID ${id} not found in the Recycle Bin`,
+          });
+          continue;
+        }
+
+        console.log(`Found ${book.title}`);
+
+        await this.postbookRepository.remove(book);
+
+        console.log(`Book ${book.title} with ID ${id} deleted successfully`);
+        deletedBooks.push(book);
+      } catch (error) {
+        console.error(`Error deleting book with ID ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id,
+            error: 'Failed to delete the book due to a database error.',
+          });
+        } else {
+          errors.push({
+            id,
+            error: `Error deleting book with ID ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { deletedBooks, errors };
   }
 ```

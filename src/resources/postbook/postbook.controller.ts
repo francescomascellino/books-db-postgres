@@ -109,6 +109,16 @@ export class PostbookController {
     );
   }
 
+  @Delete('bulk/delete')
+  async deleteMultipleBooks(
+    @Body() deleteMultiplePostbooksDto: DeleteMultiplePostbooksDto,
+  ) {
+    console.log('Soft deleting multiple books');
+    return this.postbookService.deleteMultipleBooks(
+      deleteMultiplePostbooksDto.bookIds,
+    );
+  }
+
   @Patch('restore/:id')
   async restore(@Param('id') id: string) {
     console.log(`Restoring Book with id ${id}`);
