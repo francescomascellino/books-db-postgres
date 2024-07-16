@@ -12,6 +12,10 @@ import { QueryFailedError, Repository } from 'typeorm';
 import { Postuser } from '../postuser/entities/postuser.entity';
 import { PostuserPostbook } from '../postuser_postbook/entities/postuser_postbook.entity';
 import { CreateMultiplePostbooksDto } from './dto/create-multiple-postbooks.dto';
+import {
+  PaginatedResultsDto,
+  PaginationLinksDto,
+} from './dto/paginated-results.dto';
 
 @Injectable()
 export class PostbookService {
@@ -637,38 +641,32 @@ export class PostbookService {
 
   // TROVARE MODO PER INSERIRE LA PAGINAZIONE SENZA RIPETERE CODICE
 
-  createPaginationLinks(page: number, pageSize: number, totalPages: number) {
-    // TROVARE MODO PER ESTRARRE URL DALLA REQUEST
-    // const totalPages = Math.ceil(total / pageSize);
-    // console.log(req);
-
-    return {
-      first: `postbooks/paginate?page=1&pageSize=${pageSize}`,
-      prev:
-        page > 1
-          ? `postbooks/paginate?page=${page - 1}&pageSize=${pageSize}`
-          : null,
-      next:
-        page < totalPages
-          ? `/postbooks/paginate?page=${page + 1}&pageSize=${pageSize}`
-          : null,
-      last: `postbooks/paginate?page=${totalPages}&pageSize=${pageSize}`,
-      hasPreviousPage: page > 1,
-      hasNextPage: page < totalPages,
-    };
+  /**
+   * Crea i link di paginazione basati sul numero di pagina corrente, il numero totale di pagine e il numero di elementi per pagina.
+   * @param page Numero della pagina corrente.
+   * @param totalPages Numero totale di pagine.
+   * @param pageSize Numero di elementi per pagina.
+   * @returns Oggetto PaginationLinksDto contenente i link di navigazione.
+   */
+  private createPaginationLinks(
+    page: number,
+    totalPages: number,
+    pageSize: number,
+    baseUrl: string,
+  ): PaginationLinksDto {
+    return new PaginationLinksDto(page, totalPages, pageSize, baseUrl);
   }
 
+  /**
+   * Restituisce una lista paginata di Postbooks.
+   * @param page Numero della pagina corrente.
+   * @param pageSize Numero di elementi per pagina.
+   * @returns Oggetto PaginatedResultsDto contenente i dati paginati.
+   */
   async paginateAll(
     page: number = 1,
     pageSize: number = 10,
-  ): Promise<{
-    data: Postbook[];
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    links: object;
-  }> {
+  ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository.findAndCount({
       // skip: Offset (paginated) where from entities should be taken.
       // Ovvvero a pagina 1 vengono saltati 0 elementi
@@ -677,17 +675,97 @@ export class PostbookService {
       take: pageSize,
     });
 
-    const totalPages = Math.ceil(total / pageSize);
-
-    const links = this.createPaginationLinks(page, pageSize, totalPages);
-
-    return {
+    const paginatedResults = new PaginatedResultsDto(
       data,
       total,
       page,
       pageSize,
-      totalPages,
-      links,
-    };
+    );
+    const links = this.createPaginationLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      `/postbooks/paginate`,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
+  }
+
+  /**
+   * Restituisce una lista paginata di Postbooks disponibili.
+   * @param page Numero della pagina corrente. Default: 1.
+   * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @returns Oggetto PaginatedResultsDto contenente i dati paginati.
+   */
+  async paginateAvailableBooks(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<PaginatedResultsDto> {
+    const [data, total] = await this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
+      .leftJoin(
+        PostuserPostbook,
+        'postuserPostbook', // Alias di PostuserPostbook
+        'postbook.id = postuserPostbook.pbook_id',
+      )
+      .where(
+        'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
+      )
+      // skip: Offset (paginated) where from entities should be taken.
+      // Ovvvero a pagina 1 vengono saltati 0 elementi
+      // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
+      .skip(page > 0 ? (page - 1) * pageSize : 0)
+      .take(pageSize)
+      .getManyAndCount();
+
+    const paginatedResults = new PaginatedResultsDto(
+      data,
+      total,
+      page,
+      pageSize,
+    );
+    const links = this.createPaginationLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      `/postbooks/paginate/available`,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
+  }
+
+  async paginateTrashedBooks(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<PaginatedResultsDto> {
+    const [data, total] = await this.postbookRepository
+      .createQueryBuilder('postbook') // Alias di Postbook
+      // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
+      .where('postbook.is_deleted IS TRUE')
+      // skip: Offset (paginated) where from entities should be taken.
+      // Ovvvero a pagina 1 vengono saltati 0 elementi
+      // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
+      .skip(page > 0 ? (page - 1) * pageSize : 0)
+      .take(pageSize)
+      .getManyAndCount();
+
+    const paginatedResults = new PaginatedResultsDto(
+      data,
+      total,
+      page,
+      pageSize,
+    );
+    const links = this.createPaginationLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      `/postbooks/paginate/trashed`,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
   }
 }

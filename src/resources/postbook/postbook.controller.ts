@@ -14,6 +14,7 @@ import { CreatePostbookDto } from '../postbook/dto/create-postbook.dto';
 import { UpdatePostbookDto } from './dto/update-postbook.dto';
 import { CreateMultiplePostbooksDto } from './dto/create-multiple-postbooks.dto';
 import { DeleteMultiplePostbooksDto } from './dto/delete-multiple-books.dto';
+import { PaginatedResultsDto } from './dto/paginated-results.dto';
 
 @Controller('postbooks')
 export class PostbookController {
@@ -62,25 +63,36 @@ export class PostbookController {
   }
 
   @Get('paginate')
-  async getPaginatedBooks(
-    @Query('page') page: number,
-    @Query('pageSize') pageSize: number,
-  ): Promise<{
-    data: Postbook[];
-    total: number;
-    page: number;
-    pageSize: number;
-    links: any;
-  }> {
-    console.log(`Find all Books - Page: ${page}, PageSize: ${pageSize}`);
-    const pageNumber = page ? Number(page) : 1;
-    const pageSizeNumber = pageSize ? Number(pageSize) : 10;
-
-    const result = await this.postbookService.paginateAll(
-      pageNumber,
-      pageSizeNumber,
+  async paginateAll(
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ): Promise<PaginatedResultsDto> {
+    console.log(
+      `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
-    return result;
+    return this.postbookService.paginateAll(page, pageSize);
+  }
+
+  @Get('paginate/available')
+  async paginateAvailableBooks(
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ): Promise<PaginatedResultsDto> {
+    console.log(
+      `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
+    );
+    return this.postbookService.paginateAvailableBooks(page, pageSize);
+  }
+
+  @Get('paginate/trashed')
+  async paginateTrashedBooks(
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ): Promise<PaginatedResultsDto> {
+    console.log(
+      `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}`,
+    );
+    return this.postbookService.paginateTrashedBooks(page, pageSize);
   }
 
   @Get('loans')

@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   Unique,
+  CreateDateColumn,
 } from 'typeorm';
 
 @Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
@@ -29,6 +30,7 @@ export class Postbook {
   @Column({ type: 'integer', nullable: true })
   loaned_to: number | null;
 
+  @CreateDateColumn()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' }) // Esempio di colonna timestamp con valore di default corrente
   created_at: Date;
 
