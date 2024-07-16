@@ -3311,6 +3311,8 @@ Nel Controller:
 ```
 
 ## Paginazione
+
+Creiamo un DTO per gestire i dati della paginazione
 ***src\resources\postbook\dto\paginated-results.dto.ts***
 ```ts
 import { ValidateNested } from 'class-validator';
@@ -3336,11 +3338,8 @@ export class PaginationLinksDto {
     totalPages: number,
     pageSize: number,
     baseUrl: string,
-    /*     first: string,
-    prev: string | null,
-    next: string | null,
-    last: string, */
   ) {
+    // Usiamo baseUrl, page e pageSize per costruire i link
     this.first = `${baseUrl}?page=1&pageSize=${pageSize}`;
     (this.prev =
       page > 1 ? `${baseUrl}?page=${page - 1}&pageSize=${pageSize}` : null),
@@ -3377,14 +3376,11 @@ export class PaginatedResultsDto {
     page: number = 1,
     pageSize: number = 10,
     links: PaginationLinksDto = new PaginationLinksDto(
+      // Valori di default
       1, // page
       1, // totalPages
       10, // pageSize
       '', // baseUrl
-      //'', // first
-      //null, // prev
-      //null, // next
-      //'', // last
     ),
   ) {
     this.data = data;
@@ -3395,7 +3391,6 @@ export class PaginatedResultsDto {
     this.links = links;
   }
 }
-
 ```
 
 Service
@@ -3426,6 +3421,9 @@ Service
     page: number = 1,
     pageSize: number = 10,
   ): Promise<PaginatedResultsDto> {
+    // Estraiamo da findAndCount i dati e il totale
+    // In realtà avremmo dovuto escludere i dati soft deleted
+    // Normalmente avremmo usato, come nei metodi successivi, il Query Builder
     const [data, total] = await this.postbookRepository.findAndCount({
       // skip: Offset (paginated) where from entities should be taken.
       // Ovvvero a pagina 1 vengono saltati 0 elementi
@@ -3434,6 +3432,7 @@ Service
       take: pageSize,
     });
 
+    // Ora che abbiamo data e total possiamo configurare un nuovo PaginatedResultsDto
     const paginatedResults = new PaginatedResultsDto(
       data,
       total,
@@ -3444,9 +3443,10 @@ Service
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate`,
+      `/postbooks/paginate`, // Inseriamo l'urlbase dei link che genereremo
     );
-    paginatedResults.links = links;
+    // Assegniammo i link generati da createPaginationLinks()
+    paginatedResults.links = links; 
 
     return paginatedResults;
   }
@@ -3461,7 +3461,9 @@ Service
     page: number = 1,
     pageSize: number = 10,
   ): Promise<PaginatedResultsDto> {
+    // Estraiamo da getManyAndCount i dati e il totale
     const [data, total] = await this.postbookRepository
+      // Usiamo il Query Builder
       .createQueryBuilder('postbook') // Alias di Postbook
       // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
       .leftJoin(
@@ -3500,7 +3502,9 @@ Service
     page: number = 1,
     pageSize: number = 10,
   ): Promise<PaginatedResultsDto> {
+    // Estraiamo da getManyAndCount i dati e il totale
     const [data, total] = await this.postbookRepository
+      // Usiamo il Query Builder
       .createQueryBuilder('postbook') // Alias di Postbook
       // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
       .where('postbook.is_deleted IS TRUE')
@@ -3563,8 +3567,8 @@ Controller
     return this.postbookService.paginateTrashedBooks(page, pageSize);
   }
 ```
-## Swagger
 
+## Swagger
 Swagger ci permetet di creare un endpoint che descrive la nostra REST API
 E' Necessario installare Swagger
 ```bash
