@@ -1,6 +1,17 @@
-import { IsBoolean, IsString, ValidateNested } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Postbook } from '../entities/postbook.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { OrderEnum } from 'src/resources/enum/order.enum';
 
 export class PaginationLinksDto {
   @IsString()
@@ -8,42 +19,42 @@ export class PaginationLinksDto {
     example: 'http://localhost:3000/postbooks/paginate?page=1&pageSize=10',
     description: 'Link alla prima pagina',
   })
-  first: string; // Link alla prima pagina
+  readonly first: string; // Link alla prima pagina
 
   @IsString()
   @ApiProperty({
     example: 'http://localhost:3000/postbooks/paginate?page=1&pageSize=10',
     description: 'Link alla pagina precedente',
   })
-  prev: string | null; // Link alla pagina precedente
+  readonly prev: string | null; // Link alla pagina precedente
 
   @IsString()
   @ApiProperty({
     example: 'http://localhost:3000/postbooks/paginate?page=2&pageSize=10',
     description: 'Link alla pagina successiva',
   })
-  next: string | null; // Link alla pagina successiva
+  readonly next: string | null; // Link alla pagina successiva
 
   @IsString()
   @ApiProperty({
     example: 'http://localhost:3000/postbooks/paginate?page=3&pageSize=10',
     description: "Link all'ultima pagina",
   })
-  last: string; // Link all'ultima pagina
+  readonly last: string; // Link all'ultima pagina
 
   @IsBoolean()
   @ApiProperty({
     example: true,
     description: 'Indica la presenza di una pagina precedente',
   })
-  hasPreviousPage: boolean; // Indica la presenza di una pagina precedente
+  readonly hasPreviousPage: boolean; // Indica la presenza di una pagina precedente
 
   @IsBoolean()
   @ApiProperty({
     example: true,
     description: 'Indica la presenza di una pagina successiva',
   })
-  hasNextPage: boolean; // Indica la presenza di una pagina successiva
+  readonly hasNextPage: boolean; // Indica la presenza di una pagina successiva
 
   /**
    * Costruttore per PaginationLinksDto.
@@ -88,31 +99,50 @@ export class PaginatedResultsDto {
     ],
     description: 'Elenco dei libri',
   })
-  data: Postbook[];
+  readonly data: Postbook[];
 
   @ApiProperty({
     example: 22,
     description: 'Il numero totale di elementi trovati',
   })
-  total: number;
+  readonly total: number;
 
   @ApiProperty({
     example: 1,
     description: 'La pagina corrente',
   })
-  page: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  readonly page: number;
 
   @ApiProperty({
     example: 10,
     description: 'Numero di elementi per pagina',
   })
-  pageSize: number;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @IsOptional()
+  readonly pageSize: number;
 
   @ApiProperty({
     example: 3,
     description: 'Numero totale di pagine',
   })
-  totalPages: number;
+  @Type(() => Number)
+  @IsInt()
+  readonly totalPages: number;
+
+  @IsEnum(OrderEnum)
+  @IsOptional()
+  @ApiProperty({
+    example: OrderEnum.ASC,
+    description: 'Ordine dei risultati',
+  })
+  readonly order: OrderEnum;
 
   @ApiProperty({
     description: 'Link di navigazione tra le pagine',
@@ -125,6 +155,7 @@ export class PaginatedResultsDto {
    * @param total Numero totale di elementi.
    * @param page Numero della pagina corrente.
    * @param pageSize Numero di elementi per pagina.
+   * @param order L'ordine con cui vengono elencati gli elementi.
    * @param links Oggetto PaginationLinksDto contenente i link di navigazione.
    */
   constructor(
@@ -132,6 +163,7 @@ export class PaginatedResultsDto {
     total: number = 0,
     page: number = 1,
     pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC,
     links: PaginationLinksDto = new PaginationLinksDto(
       1, // page
       1, // totalPages
@@ -144,6 +176,7 @@ export class PaginatedResultsDto {
     this.page = page;
     this.pageSize = pageSize;
     this.totalPages = Math.ceil(total / pageSize);
+    this.order = order;
     this.links = links;
   }
 }

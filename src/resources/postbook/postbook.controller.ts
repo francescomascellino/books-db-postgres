@@ -18,6 +18,7 @@ import { DeleteMultiplePostbooksDto } from './dto/delete-multiple-books.dto';
 import { PaginatedResultsDto } from './dto/paginated-results.dto';
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { ApiTags } from '@nestjs/swagger';
+import { OrderEnum } from '../enum/order.enum';
 
 @Controller('postbooks')
 @ApiTags('Book (PostgreSQL)')
@@ -70,36 +71,49 @@ export class PostbookController {
   async paginateAll(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Query('order') order: OrderEnum = OrderEnum.ASC, //Default
     @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
-      `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
+      `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
-    return this.postbookService.paginateAll(page, pageSize, request);
+    return this.postbookService.paginateAll(page, pageSize, order, request);
   }
 
   @Get('paginate/available')
   async paginateAvailableBooks(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Query('order') order: OrderEnum = OrderEnum.ASC, //Default
     @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
-      `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
+      `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
-    return this.postbookService.paginateAvailableBooks(page, pageSize, request);
+    return this.postbookService.paginateAvailableBooks(
+      page,
+      pageSize,
+      order,
+      request,
+    );
   }
 
   @Get('paginate/trashed')
   async paginateTrashedBooks(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Query('order') order: OrderEnum = OrderEnum.ASC, //Default
     @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
-      `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}`,
+      `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
-    return this.postbookService.paginateTrashedBooks(page, pageSize, request);
+    return this.postbookService.paginateTrashedBooks(
+      page,
+      pageSize,
+      order,
+      request,
+    );
   }
 
   @Get('loans')

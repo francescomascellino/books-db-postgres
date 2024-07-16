@@ -17,6 +17,7 @@ import {
   PaginationLinksDto,
 } from './dto/paginated-results.dto';
 import { Request } from 'express'; // Importiamo sempre Request da express
+import { OrderEnum } from '../enum/order.enum';
 
 @Injectable()
 export class PostbookService {
@@ -676,6 +677,7 @@ export class PostbookService {
   async paginateAll(
     page: number = 1,
     pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC,
     request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository.findAndCount({
@@ -684,6 +686,9 @@ export class PostbookService {
       // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
       skip: page > 0 ? (page - 1) * pageSize : 0,
       take: pageSize,
+      order: {
+        title: order, // Ordiniamo per titolo
+      },
     });
 
     const paginatedResults = new PaginatedResultsDto(
@@ -691,6 +696,7 @@ export class PostbookService {
       total,
       page,
       pageSize,
+      order,
     );
     const links = this.createPaginationLinks(
       page,
@@ -714,6 +720,7 @@ export class PostbookService {
   async paginateAvailableBooks(
     page: number = 1,
     pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC,
     request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository
@@ -727,6 +734,7 @@ export class PostbookService {
       .where(
         'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
       )
+      .orderBy('postbook.title', order)
       // skip: Offset (paginated) where from entities should be taken.
       // Ovvvero a pagina 1 vengono saltati 0 elementi
       // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
@@ -762,12 +770,14 @@ export class PostbookService {
   async paginateTrashedBooks(
     page: number = 1,
     pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC,
     request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository
       .createQueryBuilder('postbook') // Alias di Postbook
       // LEFT JOIN: postbook (sx) si unisce a postuserPostbook
       .where('postbook.is_deleted IS TRUE')
+      .orderBy('postbook.title', order)
       // skip: Offset (paginated) where from entities should be taken.
       // Ovvvero a pagina 1 vengono saltati 0 elementi
       // a pagina 2 vengono saltati 10 elementi dato che sono già presenti a pag 1
