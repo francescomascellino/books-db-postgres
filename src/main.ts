@@ -27,7 +27,7 @@ async function bootstrap() {
     .setTitle('Books example API')
     .setDescription('The Books API')
     .setVersion('1.0')
-    .addTag('books')
+    .addTag('Books')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('bookapi', app, document);

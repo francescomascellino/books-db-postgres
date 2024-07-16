@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDocument } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags } from '@nestjs/swagger';
 
 /**
  * Interfaccia che estende l'interfaccia Request di Express per includere le informazioni dell'utente autenticato.
@@ -26,6 +27,7 @@ export interface ExtendedRequest extends Request {
   user: UserDocument;
 }
 @Controller('user')
+@ApiTags('User (MongoDB)')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

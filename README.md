@@ -3319,12 +3319,12 @@ import { ValidateNested } from 'class-validator';
 import { Postbook } from '../entities/postbook.entity';
 
 export class PaginationLinksDto {
-  first: string;
-  prev: string | null;
-  next: string | null;
-  last: string;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
+  first: string; // Link alla prima pagina
+  prev: string | null; // Link alla pagina precedente
+  next: string | null; // Link alla pagina successiva
+  last: string; // Link all'ultima pagina
+  hasPreviousPage: boolean; // Indica la presenza di una pagina precedente
+  hasNextPage: boolean; // Indica la presenza di una pagina successiva
 
   /**
    * Costruttore per PaginationLinksDto.
@@ -3339,7 +3339,6 @@ export class PaginationLinksDto {
     pageSize: number,
     baseUrl: string,
   ) {
-    // Usiamo baseUrl, page e pageSize per costruire i link
     this.first = `${baseUrl}?page=1&pageSize=${pageSize}`;
     (this.prev =
       page > 1 ? `${baseUrl}?page=${page - 1}&pageSize=${pageSize}` : null),
@@ -3376,7 +3375,6 @@ export class PaginatedResultsDto {
     page: number = 1,
     pageSize: number = 10,
     links: PaginationLinksDto = new PaginationLinksDto(
-      // Valori di default
       1, // page
       1, // totalPages
       10, // pageSize
@@ -3401,7 +3399,7 @@ npm install --save @nestjs/platform-express
 Service
 ```ts
 // Altri import
-import { Request } from 'express'; // IMPORTIAMO REQUEST DA express
+import { Request } from 'express'; // Importiamo sempre Request da express
 
 @Injectable()
 export class PostbookService {

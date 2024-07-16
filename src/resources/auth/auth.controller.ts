@@ -3,8 +3,10 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 // import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
+@ApiTags('Auth (MongoDB)')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

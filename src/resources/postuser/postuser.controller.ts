@@ -1,9 +1,11 @@
 import { Controller, Get, Param, Delete } from '@nestjs/common';
 import { PostuserService } from './postuser.service';
+import { ApiTags } from '@nestjs/swagger';
 // import { CreatePostuserDto } from './dto/create-postuser.dto';
 // import { UpdatePostuserDto } from './dto/update-postuser.dto';
 
 @Controller('postuser')
+@ApiTags('User (PostgreSQL)')
 export class PostuserController {
   constructor(private readonly postuserService: PostuserService) {}
   /* 

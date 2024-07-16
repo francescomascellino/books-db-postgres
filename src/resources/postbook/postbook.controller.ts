@@ -17,8 +17,10 @@ import { CreateMultiplePostbooksDto } from './dto/create-multiple-postbooks.dto'
 import { DeleteMultiplePostbooksDto } from './dto/delete-multiple-books.dto';
 import { PaginatedResultsDto } from './dto/paginated-results.dto';
 import { Request } from 'express'; // Importiamo sempre Request da express
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('postbooks')
+@ApiTags('Book (PostgreSQL)')
 export class PostbookController {
   constructor(private readonly postbookService: PostbookService) {}
 

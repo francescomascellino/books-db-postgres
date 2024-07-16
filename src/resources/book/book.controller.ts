@@ -18,8 +18,10 @@ import { UpdateMultipleBooksDto } from './dto/update-multiple-books.dto';
 import { BookDocument } from './schemas/book.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginateResult } from 'mongoose';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('book')
+@ApiTags('Book (MongoDB)')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
