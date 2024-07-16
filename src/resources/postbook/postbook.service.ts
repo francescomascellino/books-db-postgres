@@ -658,10 +658,10 @@ export class PostbookService {
   }
 
   /**
-   * Restituisce una lista paginata di Postbooks.
-   * @param page Numero della pagina corrente.
-   * @param pageSize Numero di elementi per pagina.
-   * @returns Oggetto PaginatedResultsDto contenente i dati paginati.
+   * Restituisce una lista paginata di Postbooks disponibili.
+   * @param page Numero della pagina corrente. Default: 1.
+   * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @returns Oggetto PaginatedResults contenente i dati paginati.
    */
   async paginateAll(
     page: number = 1,
@@ -696,7 +696,7 @@ export class PostbookService {
    * Restituisce una lista paginata di Postbooks disponibili.
    * @param page Numero della pagina corrente. Default: 1.
    * @param pageSize Numero di elementi per pagina. Default: 10.
-   * @returns Oggetto PaginatedResultsDto contenente i dati paginati.
+   * @returns Oggetto PaginatedResults contenente i dati paginati.
    */
   async paginateAvailableBooks(
     page: number = 1,
@@ -737,6 +737,12 @@ export class PostbookService {
     return paginatedResults;
   }
 
+  /**
+   * Restituisce una lista paginata di Postbooks disponibili.
+   * @param page Numero della pagina corrente. Default: 1.
+   * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @returns Oggetto PaginatedResults contenente i dati paginati.
+   */
   async paginateTrashedBooks(
     page: number = 1,
     pageSize: number = 10,
