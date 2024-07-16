@@ -16,6 +16,7 @@ import {
   PaginatedResultsDto,
   PaginationLinksDto,
 } from './dto/paginated-results.dto';
+import { Request } from 'express'; // Importiamo sempre Request da express
 
 @Injectable()
 export class PostbookService {
@@ -646,14 +647,22 @@ export class PostbookService {
    * @param page Numero della pagina corrente.
    * @param totalPages Numero totale di pagine.
    * @param pageSize Numero di elementi per pagina.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginationLinksDto contenente i link di navigazione.
    */
   private createPaginationLinks(
     page: number,
     totalPages: number,
     pageSize: number,
-    baseUrl: string,
+    // baseUrl: string,
+    request: Request,
   ): PaginationLinksDto {
+    // Manipoliamo l'oggetto request e assegniamo i dati interessati alla costante baseUrl
+    // request.originalUrl.split('?') divide la stringa  in due parti, la prima parte è il path (/postbooks/paginat), la seconda è la query string (page=3&pageSize=10).
+    // Di questo questo array ci serve il dato all'indice 0., quindi prendiamo request.originalUrl.split('?')[0]
+    const baseUrl = `${request.protocol}://${request.get('host')}${request.originalUrl.split('?')[0]}`;
+    console.log(`baseUrl: ${baseUrl}`);
+    console.log(`originalUrl: ${request.originalUrl.split('?')[0]}`);
     return new PaginationLinksDto(page, totalPages, pageSize, baseUrl);
   }
 
@@ -661,11 +670,13 @@ export class PostbookService {
    * Restituisce una lista paginata di Postbooks disponibili.
    * @param page Numero della pagina corrente. Default: 1.
    * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginatedResults contenente i dati paginati.
    */
   async paginateAll(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository.findAndCount({
       // skip: Offset (paginated) where from entities should be taken.
@@ -685,7 +696,8 @@ export class PostbookService {
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate`,
+      // `/postbooks/paginate`,
+      request,
     );
     paginatedResults.links = links;
 
@@ -696,11 +708,13 @@ export class PostbookService {
    * Restituisce una lista paginata di Postbooks disponibili.
    * @param page Numero della pagina corrente. Default: 1.
    * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginatedResults contenente i dati paginati.
    */
   async paginateAvailableBooks(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository
       .createQueryBuilder('postbook') // Alias di Postbook
@@ -730,7 +744,8 @@ export class PostbookService {
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate/available`,
+      // `/postbooks/paginate/available`,
+      request,
     );
     paginatedResults.links = links;
 
@@ -741,11 +756,13 @@ export class PostbookService {
    * Restituisce una lista paginata di Postbooks disponibili.
    * @param page Numero della pagina corrente. Default: 1.
    * @param pageSize Numero di elementi per pagina. Default: 10.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginatedResults contenente i dati paginati.
    */
   async paginateTrashedBooks(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     const [data, total] = await this.postbookRepository
       .createQueryBuilder('postbook') // Alias di Postbook
@@ -768,7 +785,8 @@ export class PostbookService {
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate/trashed`,
+      // `/postbooks/paginate/trashed`,
+      request,
     );
     paginatedResults.links = links;
 

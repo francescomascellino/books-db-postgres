@@ -3393,21 +3393,56 @@ export class PaginatedResultsDto {
 }
 ```
 
+Avremo bisogno di recuperare l'url base dalla Request per non doverlo insire manualmente. Per poterlo fare dobbiamo essere in grado di gestire l'oggetto Request. questo è possbile installare la piattaforma Esxpress, il Framework su cui si base NestJS.
+```bash
+npm install --save @nestjs/platform-express
+```
+
 Service
 ```ts
+// Altri import
+import { Request } from 'express'; // IMPORTIAMO REQUEST DA express
+
+@Injectable()
+export class PostbookService {
+  constructor(
+    @InjectRepository(Postbook)
+    private postbookRepository: Repository<Postbook>,
+
+    @InjectRepository(Postuser)
+    private postuserRepository: Repository<Postuser>,
+
+    @InjectRepository(PostuserPostbook)
+    private postuserPostbookRepository: Repository<PostuserPostbook>,
+  ) {}
+
+// Altri metodi
+
   /**
    * Crea i link di paginazione basati sul numero di pagina corrente, il numero totale di pagine e il numero di elementi per pagina.
    * @param page Numero della pagina corrente.
    * @param totalPages Numero totale di pagine.
    * @param pageSize Numero di elementi per pagina.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginationLinksDto contenente i link di navigazione.
    */
   private createPaginationLinks(
     page: number,
     totalPages: number,
     pageSize: number,
-    baseUrl: string,
+    // baseUrl: string,
+    request: Request
   ): PaginationLinksDto {
+
+    // Manipoliamo l'oggetto request e assegniamo i dati interessati alla costante baseUrl
+    // request.originalUrl.split('?') divide la stringa  in due parti, la prima parte è il path (/postbooks/paginat), la seconda è la query string (page=3&pageSize=10). 
+    // Di questo questo array ci serve il dato all'indice 0., quindi prendiamo request.originalUrl.split('?')[0]
+    const baseUrl = `${request.protocol}://${request.get('host')}${request.originalUrl.split('?')[0]}`;
+
+    console.log(`baseUrl: ${baseUrl}`);
+
+    console.log(`originalUrl: ${request.originalUrl.split('?')[0]}`);
+
     return new PaginationLinksDto(page, totalPages, pageSize, baseUrl);
   }
 
@@ -3415,11 +3450,13 @@ Service
    * Restituisce una lista paginata di Postbooks.
    * @param page Numero della pagina corrente.
    * @param pageSize Numero di elementi per pagina.
+   * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
    * @returns Oggetto PaginatedResultsDto contenente i dati paginati.
    */
   async paginateAll(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     // Estraiamo da findAndCount i dati e il totale
     // In realtà avremmo dovuto escludere i dati soft deleted
@@ -3443,7 +3480,8 @@ Service
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate`, // Inseriamo l'urlbase dei link che genereremo
+      // `/postbooks/paginate`, // Inseriamo l'urlbase dei link che genereremo
+      request, // Passiamo la request a createPaginationLinks in modo che crei la variabile baseUrl
     );
     // Assegniammo i link generati da createPaginationLinks()
     paginatedResults.links = links; 
@@ -3460,6 +3498,7 @@ Service
   async paginateAvailableBooks(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     // Estraiamo da getManyAndCount i dati e il totale
     const [data, total] = await this.postbookRepository
@@ -3491,7 +3530,8 @@ Service
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate/available`,
+      // `/postbooks/paginate/avaialable`,
+      request,
     );
     paginatedResults.links = links;
 
@@ -3501,6 +3541,7 @@ Service
   async paginateTrashedBooks(
     page: number = 1,
     pageSize: number = 10,
+    request: Request,
   ): Promise<PaginatedResultsDto> {
     // Estraiamo da getManyAndCount i dati e il totale
     const [data, total] = await this.postbookRepository
@@ -3525,47 +3566,65 @@ Service
       page,
       paginatedResults.totalPages,
       pageSize,
-      `/postbooks/paginate/trashed`,
+      // `/postbooks/paginate/trashed`,
+      request,
     );
     paginatedResults.links = links;
 
     return paginatedResults;
   }
+
+}
 ```
 Controller
 ```ts
+// Altri Import
+// Importiamo sempre Request da express
+import { Request } from 'express';
+
+@Controller('postbooks')
+export class PostbookController {
+  constructor(private readonly postbookService: PostbookService) {}
+
+  // Altri Metodi
+
   @Get('paginate')
   async paginateAll(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
       `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
-    return this.postbookService.paginateAll(page, pageSize);
+    return this.postbookService.paginateAll(page, pageSize, request);
   }
 
   @Get('paginate/available')
   async paginateAvailableBooks(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
       `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
-    return this.postbookService.paginateAvailableBooks(page, pageSize);
+    return this.postbookService.paginateAvailableBooks(page, pageSize, request);
   }
 
   @Get('paginate/trashed')
   async paginateTrashedBooks(
     @Query('page') page: number = 1,
     @Query('pageSize') pageSize: number = 10,
+    @Req() request: Request, // Inviamo re Request come parametro
   ): Promise<PaginatedResultsDto> {
     console.log(
       `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
-    return this.postbookService.paginateTrashedBooks(page, pageSize);
+    return this.postbookService.paginateTrashedBooks(page, pageSize, request);
   }
+
+}
 ```
 
 ## Swagger
