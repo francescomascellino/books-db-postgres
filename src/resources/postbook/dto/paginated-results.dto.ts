@@ -9,51 +9,26 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Postbook } from '../entities/postbook.entity';
-import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import { OrderEnum } from 'src/resources/enum/order.enum';
+import { Type } from 'class-transformer';
 
 export class PaginationLinksDto {
   @IsString()
-  @ApiProperty({
-    example: 'http://localhost:3000/postbooks/paginate?page=1&pageSize=10',
-    description: 'Link alla prima pagina',
-  })
   readonly first: string; // Link alla prima pagina
 
   @IsString()
-  @ApiProperty({
-    example: 'http://localhost:3000/postbooks/paginate?page=1&pageSize=10',
-    description: 'Link alla pagina precedente',
-  })
   readonly prev: string | null; // Link alla pagina precedente
 
   @IsString()
-  @ApiProperty({
-    example: 'http://localhost:3000/postbooks/paginate?page=2&pageSize=10',
-    description: 'Link alla pagina successiva',
-  })
   readonly next: string | null; // Link alla pagina successiva
 
   @IsString()
-  @ApiProperty({
-    example: 'http://localhost:3000/postbooks/paginate?page=3&pageSize=10',
-    description: "Link all'ultima pagina",
-  })
   readonly last: string; // Link all'ultima pagina
 
   @IsBoolean()
-  @ApiProperty({
-    example: true,
-    description: 'Indica la presenza di una pagina precedente',
-  })
   readonly hasPreviousPage: boolean; // Indica la presenza di una pagina precedente
 
   @IsBoolean()
-  @ApiProperty({
-    example: true,
-    description: 'Indica la presenza di una pagina successiva',
-  })
   readonly hasNextPage: boolean; // Indica la presenza di una pagina successiva
 
   /**
@@ -84,43 +59,18 @@ export class PaginationLinksDto {
 
 export class PaginatedResultsDto {
   @ValidateNested({ each: true })
-  @ApiProperty({
-    type: [Postbook],
-    example: [
-      {
-        title: 'Il Signore degli Anelli',
-        author: 'J.R.R. Tolkien',
-        ISBN: '978-0-618-15600-1',
-        loaned_to: {
-          _id: '66605031a9a8d2847d5b85d5',
-          name: 'Mario',
-        },
-      },
-    ],
-    description: 'Elenco dei libri',
-  })
   readonly data: Postbook[];
 
-  @ApiProperty({
-    example: 22,
-    description: 'Il numero totale di elementi trovati',
-  })
+  @Type(() => Number)
+  @IsInt()
   readonly total: number;
 
-  @ApiProperty({
-    example: 1,
-    description: 'La pagina corrente',
-  })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()
   readonly page: number;
 
-  @ApiProperty({
-    example: 10,
-    description: 'Numero di elementi per pagina',
-  })
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -128,25 +78,14 @@ export class PaginatedResultsDto {
   @IsOptional()
   readonly pageSize: number;
 
-  @ApiProperty({
-    example: 3,
-    description: 'Numero totale di pagine',
-  })
   @Type(() => Number)
   @IsInt()
   readonly totalPages: number;
 
   @IsEnum(OrderEnum)
   @IsOptional()
-  @ApiProperty({
-    example: OrderEnum.ASC,
-    description: 'Ordine dei risultati',
-  })
   readonly order: OrderEnum;
 
-  @ApiProperty({
-    description: 'Link di navigazione tra le pagine',
-  })
   links: PaginationLinksDto;
 
   /**

@@ -3625,6 +3625,196 @@ export class PostbookController {
 }
 ```
 
+Ordinare i risultati
+
+Creiamo un enum che ci permetta di selezionare l'ordine (ASC o DESC)
+***src\resources\enum\order.enum.ts***
+```ts
+export enum OrderEnum {
+  ASC = 'ASC',
+  DESC = 'DESC',
+}
+```
+
+modifichiamo la classe del DTO PaginatedResults per accettare il campo order
+***src\resources\postbook\dto\paginated-results.dto.ts***
+```ts
+export class PaginatedResultsDto {
+  @ValidateNested({ each: true })
+  readonly data: Postbook[];
+
+  @Type(() => Number)
+  @IsInt()
+  readonly total: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  readonly page: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @IsOptional()
+  readonly pageSize: number;
+
+  @Type(() => Number)
+  @IsInt()
+  readonly totalPages: number;
+
+  // Aggiungiamo la proprietà order di tipo OrderEnum
+  @IsEnum(OrderEnum)
+  @IsOptional()
+  readonly order: OrderEnum;
+
+  links: PaginationLinksDto;
+
+  constructor(
+    data: Postbook[] = [],
+    total: number = 0,
+    page: number = 1,
+    pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC, // Diamo l'opzione ASC come default
+    links: PaginationLinksDto = new PaginationLinksDto(
+      1, // page
+      1, // totalPages
+      10, // pageSize
+      '', // baseUrl
+    ),
+  ) {
+    this.data = data;
+    this.total = total;
+    this.page = page;
+    this.pageSize = pageSize;
+    this.totalPages = Math.ceil(total / pageSize);
+    this.order = order;
+    this.links = links;
+  }
+}
+```
+
+Modifichiamo i metodi nel servizio inserendo l'ordinamento. In questo caso ordineremo per titolo.
+```ts
+  async paginateAll(
+    page: number = 1,
+    pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC, // Dichiariamo sempre ASC come default se nessun altro valore viene richiesto dalla query
+    request: Request,
+  ): Promise<PaginatedResultsDto> {
+    const [data, total] = await this.postbookRepository.findAndCount({
+      skip: page > 0 ? (page - 1) * pageSize : 0,
+      take: pageSize,
+      order: {
+        title: order, // Ordiniamo per titolo
+      },
+    });
+
+    const paginatedResults = new PaginatedResultsDto(
+      data,
+      total,
+      page,
+      pageSize,
+      order,
+    );
+    const links = this.createPaginationLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      request,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
+  }
+
+  // Con Query Builder
+
+  async paginateAvailableBooks(
+    page: number = 1,
+    pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC, // Dichiariamo sempre ASC come default se nessun altro valore viene richiesto dalla query
+    request: Request,
+  ): Promise<PaginatedResultsDto> {
+    const [data, total] = await this.postbookRepository
+      .createQueryBuilder('postbook') 
+      .leftJoin(
+        PostuserPostbook,
+        'postuserPostbook',
+        'postbook.id = postuserPostbook.pbook_id',
+      )
+      .where(
+        'postuserPostbook.pbook_id IS NULL AND postbook.is_deleted IS FALSE',
+      )
+      .orderBy('postbook.title', order) // Ordiniamo per titolo
+      .skip(page > 0 ? (page - 1) * pageSize : 0)
+      .take(pageSize)
+      .getManyAndCount();
+
+    const paginatedResults = new PaginatedResultsDto(
+      data,
+      total,
+      page,
+      pageSize,
+    );
+    const links = this.createPaginationLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      request,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
+  }
+```
+
+Adesso modifichiamo il controller in modo da passare il parametro order al servizio
+```ts
+@Get('paginate')
+  async paginateAll(
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+    // Aggiungiemo order come paramwetro della query
+    @Query('order') order: OrderEnum = OrderEnum.ASC, //Default
+    @Req() request: Request,
+  ): Promise<PaginatedResultsDto> {
+    console.log(
+      `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
+    );
+    // Passiamo order al metodo del servizio
+    return this.postbookService.paginateAll(page, pageSize, order, request);
+  }
+
+  @Get('paginate/available')
+  async paginateAvailableBooks(
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+    // Aggiungiemo order come paramwetro della query
+    @Query('order') order: OrderEnum = OrderEnum.ASC, //Default
+    @Req() request: Request,
+  ): Promise<PaginatedResultsDto> {
+    console.log(
+      `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
+    );
+    return this.postbookService.paginateAvailableBooks(
+      page,
+      pageSize,
+      order, // Passiamo order al metodo del servizio
+      request,
+    );
+  }
+```
+
+Ora possiamo effettuare query chiedendo l'ordinamento dei risultati:
+```
+http://localhost:3000/postbooks/paginate/available?page=1&pageSize=10&order=ASC
+```
+```
+http://localhost:3000/postbooks/paginate/available?page=1&pageSize=10&order=DESC
+```
+
 ## Swagger
 Swagger ci permetet di creare un endpoint che descrive la nostra REST API
 E' Necessario installare Swagger
@@ -3676,3 +3866,5 @@ bootstrap();
 ```
 
 Successivamente ci basterà visitare l'endpoint ***http://localhost:3000/bookapi***
+
+AGGIUNGERE CHECK SU MAX ITEM PER PAGE
