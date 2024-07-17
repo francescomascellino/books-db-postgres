@@ -113,7 +113,7 @@ export class PaginatedResultsDto {
     this.data = data;
     this.total = total;
     this.page = page;
-    this.pageSize = pageSize;
+    this.pageSize = pageSize > 50 ? 50 : 10;
     this.totalPages = Math.ceil(total / pageSize);
     this.order = order;
     this.links = links;

@@ -3384,7 +3384,7 @@ export class PaginatedResultsDto {
     this.data = data;
     this.total = total;
     this.page = page;
-    this.pageSize = pageSize;
+    this.pageSize = pageSize > 50 ? 50 : 10; // Vogliamo visualizzare massimo 50 elementi per pagina
     this.totalPages = Math.ceil(total / pageSize);
     this.links = links;
   }
@@ -3595,6 +3595,13 @@ export class PostbookController {
     console.log(
       `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateAll(page, pageSize, request);
   }
 
@@ -3607,6 +3614,13 @@ export class PostbookController {
     console.log(
       `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateAvailableBooks(page, pageSize, request);
   }
 
@@ -3619,6 +3633,14 @@ export class PostbookController {
     console.log(
       `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}`,
     );
+
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateTrashedBooks(page, pageSize, request);
   }
 
@@ -3687,7 +3709,7 @@ export class PaginatedResultsDto {
     this.data = data;
     this.total = total;
     this.page = page;
-    this.pageSize = pageSize;
+    this.pageSize = pageSize > 50 ? 50 : 10;
     this.totalPages = Math.ceil(total / pageSize);
     this.order = order;
     this.links = links;
@@ -3783,6 +3805,13 @@ Adesso modifichiamo il controller in modo da passare il parametro order al servi
     console.log(
       `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     // Passiamo order al metodo del servizio
     return this.postbookService.paginateAll(page, pageSize, order, request);
   }
@@ -3798,6 +3827,13 @@ Adesso modifichiamo il controller in modo da passare il parametro order al servi
     console.log(
       `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateAvailableBooks(
       page,
       pageSize,
@@ -3866,5 +3902,3 @@ bootstrap();
 ```
 
 Successivamente ci basterà visitare l'endpoint ***http://localhost:3000/bookapi***
-
-AGGIUNGERE CHECK SU MAX ITEM PER PAGE

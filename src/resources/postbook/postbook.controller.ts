@@ -77,6 +77,13 @@ export class PostbookController {
     console.log(
       `Finding all Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateAll(page, pageSize, order, request);
   }
 
@@ -90,6 +97,13 @@ export class PostbookController {
     console.log(
       `Finding all avaialable Books with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateAvailableBooks(
       page,
       pageSize,
@@ -108,6 +122,13 @@ export class PostbookController {
     console.log(
       `Finding all Books in the Recycle Bin with pagination. Page: ${page}, Page Size: ${pageSize}, Order: ${order}`,
     );
+
+    if (pageSize > 50) {
+      console.log(
+        `Page Size is ${pageSize}, max Page Size allowed is 50. Page Size will be changed to 50 by default.`,
+      );
+    }
+
     return this.postbookService.paginateTrashedBooks(
       page,
       pageSize,
