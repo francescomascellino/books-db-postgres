@@ -19,6 +19,7 @@ import { PaginatedResultsDto } from './dto/paginated-results.dto';
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { ApiTags } from '@nestjs/swagger';
 import { OrderEnum } from '../enum/order.enum';
+import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
 
 @Controller('postbooks')
 @ApiTags('Book (PostgreSQL)')
@@ -45,6 +46,14 @@ export class PostbookController {
   ): Promise<Postbook[]> {
     console.log('Creating multiple Books');
     return this.postbookService.createMultiple(createMultiplePostbooksDto);
+  }
+
+  @Patch('bulk/update')
+  async updateMultipleBooks(
+    @Body() updateMultiplePostbooksDto: UpdateMultiplePostbooksDto,
+  ) {
+    console.log('Updating multiple Books');
+    return this.postbookService.updateMultipleBooks(updateMultiplePostbooksDto);
   }
 
   @Post(':bookId/burrow/:userId')

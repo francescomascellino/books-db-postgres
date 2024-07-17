@@ -18,6 +18,7 @@ import {
 } from './dto/paginated-results.dto';
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { OrderEnum } from '../enum/order.enum';
+import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
 
 @Injectable()
 export class PostbookService {
@@ -229,6 +230,77 @@ export class PostbookService {
     );
 
     return recordToUpdate;
+  }
+
+  async updateMultipleBooks(
+    updateMultiplePostbooksDto: UpdateMultiplePostbooksDto,
+  ): Promise<{
+    updatedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const updatedBooks = [];
+    const errors = [];
+
+    for (const updateBookData of updateMultiplePostbooksDto.postbooks) {
+      // Estraiamo l'id dall'elemento updateBookData dell'array di libri da aggiornare postbooks del DTO updateMultiplePostbooksDto che stiamo attualmente ciclando
+      const { id } = updateBookData;
+
+      try {
+        // Cerchiamo il Libro da aggiornare usando l'id estratto
+        const bookToUpdate = await this.postbookRepository.findOne({
+          where: { id, is_deleted: false },
+        });
+
+        if (!bookToUpdate) {
+          console.log(`Book with id ${id} not found`);
+          errors.push({
+            id: null,
+            error: `Book with id ${id} not found`,
+          });
+          continue;
+        }
+
+        console.log(`Found "${bookToUpdate.title}" with id ${id}`);
+
+        // Se abbiamo trovato il libro bookToUpdate, copiamo i dati updateBookData del DTO in bookToUpdate
+        // In questo modo adesso bookToUpdate contiene adesso i dati da aggiornare inviati dalla query
+        Object.assign(bookToUpdate, updateBookData);
+
+        try {
+          // Salviamo il record aggiornato bookToUpdate nel DB
+          await this.postbookRepository.save(bookToUpdate);
+        } catch (error) {
+          console.log(`Error: ${error.message}`);
+          errors.push({
+            id: bookToUpdate.id,
+            error: `Error updating book ${bookToUpdate.title} with id ${id}: ${error.message}`,
+          });
+          continue;
+        }
+
+        console.log(
+          `Book "${bookToUpdate.title}" updated at ${bookToUpdate.updated_at}`,
+        );
+
+        // Inseriamo il record appena salvato nell'array dei risultati updatedBooks
+        updatedBooks.push(bookToUpdate);
+      } catch (error) {
+        console.error(`Error updating book with id ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id: null,
+            error: `Failed to update book with id ${id} due to a database error.`,
+          });
+        } else {
+          errors.push({
+            id: null,
+            error: `Error updating book with id ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { updatedBooks, errors };
   }
 
   async borrowBook(bookId: number, userId: number) {

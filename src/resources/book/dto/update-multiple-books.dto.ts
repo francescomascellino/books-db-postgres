@@ -7,7 +7,7 @@ import { IsArray, ArrayMinSize, ValidateNested } from 'class-validator';
 class UpdateBookWithIdDto extends PartialType(CreateBookDto) {
   id: string;
 }
-export class UpdateMultipleBooksDto extends PartialType(CreateBookDto) {
+export class UpdateMultipleBooksDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
