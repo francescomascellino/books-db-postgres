@@ -19,6 +19,7 @@ import {
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { OrderEnum } from '../enum/order.enum';
 import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
+import { createPagLinks } from '../helpers/PostgreSQLhelpers';
 
 @Injectable()
 export class PostbookService {
@@ -713,8 +714,6 @@ export class PostbookService {
     return { deletedBooks, errors };
   }
 
-  // TROVARE MODO PER INSERIRE LA PAGINAZIONE SENZA RIPETERE CODICE
-
   /**
    * Crea i link di paginazione basati sul numero di pagina corrente, il numero totale di pagine e il numero di elementi per pagina.
    * @param page Numero della pagina corrente.
@@ -770,7 +769,7 @@ export class PostbookService {
       pageSize,
       order,
     );
-    const links = this.createPaginationLinks(
+    const links = createPagLinks(
       page,
       paginatedResults.totalPages,
       pageSize,

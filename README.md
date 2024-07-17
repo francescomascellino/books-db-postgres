@@ -3958,6 +3958,78 @@ http://localhost:3000/postbooks/paginate/available?page=1&pageSize=10&order=ASC
 http://localhost:3000/postbooks/paginate/available?page=1&pageSize=10&order=DESC
 ```
 
+E' bene inserire in un helper le funzioni non relative al servizio ed importarle:
+***src\resources\helpers\PostgreSQLhelpers.ts***
+```ts
+import { PaginationLinksDto } from '../postbook/dto/paginated-results.dto';
+import { Request } from 'express';
+
+/**
+ * Crea i link di paginazione basati sul numero di pagina corrente, il numero totale di pagine e il numero di elementi per pagina.
+ * @param page Numero della pagina corrente.
+ * @param totalPages Numero totale di pagine.
+ * @param pageSize Numero di elementi per pagina.
+ * @param request Oggetto Request da cui estraremmo il Base URL per costruire i link di paginazione.
+ * @returns Oggetto PaginationLinksDto contenente i link di navigazione.
+ */
+export function createPagLinks(
+  page: number,
+  totalPages: number,
+  pageSize: number,
+  // baseUrl: string,
+  request: Request,
+): PaginationLinksDto {
+  // Manipoliamo l'oggetto request e assegniamo i dati interessati alla costante baseUrl
+  // request.originalUrl.split('?') divide la stringa  in due parti, la prima parte è il path (/postbooks/paginat), la seconda è la query string (page=3&pageSize=10).
+  // Di questo questo array ci serve il dato all'indice 0., quindi prendiamo request.originalUrl.split('?')[0]
+  const baseUrl = `${request.protocol}://${request.get('host')}${request.originalUrl.split('?')[0]}`;
+  console.log(`baseUrl: ${baseUrl}`);
+  console.log(`originalUrl: ${request.originalUrl.split('?')[0]}`);
+  return new PaginationLinksDto(page, totalPages, pageSize, baseUrl);
+```
+
+Importiamo l'helper:
+***src\resources\postbook\postbook.service.ts***
+```ts
+import { createPagLinks } from '../helpers/PostgreSQLhelpers';
+```
+
+E' ora possibile utilizzare la funzione createPagLinks() per creare i link di paginazione
+```ts
+async paginateAll(
+    page: number = 1,
+    pageSize: number = 10,
+    order: OrderEnum = OrderEnum.ASC,
+    request: Request,
+  ): Promise<PaginatedResultsDto> {
+    const [data, total] = await this.postbookRepository.findAndCount({
+      skip: page > 0 ? (page - 1) * pageSize : 0,
+      take: pageSize,
+      order: {
+        title: order,
+      },
+    });
+
+    const paginatedResults = new PaginatedResultsDto(
+      data,
+      total,
+      page,
+      pageSize,
+      order,
+    );
+    // Usiamo il metodo importato dall'helper PostgreSQLhelpers
+    const links = createPagLinks(
+      page,
+      paginatedResults.totalPages,
+      pageSize,
+      request,
+    );
+    paginatedResults.links = links;
+
+    return paginatedResults;
+  }
+```
+
 ## Swagger
 Swagger ci permetet di creare un endpoint che descrive la nostra REST API
 E' Necessario installare Swagger
