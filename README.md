@@ -1647,6 +1647,23 @@ async updateMultipleBooks(
     console.log(`Updating book with ID: ${id}`, updateData);
 
     try {
+      // Verifica se l'ISBN esiste già per un altro libro
+      // Cerca se nel DB esiste un libro con lo stesso ISBN
+      if (updateData.ISBN && (await this.checkISBN(updateData.ISBN))) {
+        // Assegna a una variabile existingBook il libro trovato nel DB con lo stesso ISBN
+        const existingBook = await this.bookModel
+          .findOne({ ISBN: updateData.ISBN })
+          .exec();
+        // Se l'id del libro esisente nel DB è diverso dall'id libro da aggiornare chestiamo ciclando, vuol dire che stiamo cercando di aggiornare l'ISBN del libro con un ISBN assegnato ad un altro libro esistente!
+        if (existingBook._id.toString() !== id) {
+          errors.push({
+            id,
+            error: `ISBN ${updateData.ISBN} is already in use by another book`,
+          });
+          continue;
+        }
+      }
+
       // Trova e aggiorna il libro nel database
       const updatedBook = await this.bookModel
         .findByIdAndUpdate(id, updateData, { new: true })
@@ -4081,5 +4098,3 @@ bootstrap();
 ```
 
 Successivamente ci basterà visitare l'endpoint ***http://localhost:3000/bookapi***
-
-FIX UPDATE MULTIPLE BOOKS IN MONGODB

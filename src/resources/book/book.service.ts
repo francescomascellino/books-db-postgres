@@ -240,6 +240,23 @@ export class BookService {
       console.log(`Updating book with ID: ${id}`, updateData);
 
       try {
+        // Verifica se l'ISBN esiste già per un altro libro
+        // Cerca se nel DB esiste un libro con lo stesso ISBN
+        if (updateData.ISBN && (await this.checkISBN(updateData.ISBN))) {
+          // Assegna a una variabile existingBook il libro trovato nel DB con lo stesso ISBN
+          const existingBook = await this.bookModel
+            .findOne({ ISBN: updateData.ISBN })
+            .exec();
+          // Se l'id del libro esisente nel DB è diverso dall'id libro da aggiornare chestiamo ciclando, vuol dire che stiamo cercando di aggiornare l'ISBN del libro con un ISBN assegnato ad un altro libro esistente!
+          if (existingBook._id.toString() !== id) {
+            errors.push({
+              id,
+              error: `ISBN ${updateData.ISBN} is already in use by another book`,
+            });
+            continue;
+          }
+        }
+
         // Trova e aggiorna il libro nel database
         const updatedBook = await this.bookModel
           .findByIdAndUpdate(id, updateData, { new: true })
@@ -261,6 +278,60 @@ export class BookService {
 
     // Restituisce l'array di libri aggiornati
     console.log(`Updated Books:`, updatedBooks);
+    console.log('Errors:', errors);
+
+    return { updatedBooks, errors };
+  }
+
+  async newUpdateMultipleBooks(
+    updateDtos: UpdateMultipleBooksDto,
+  ): Promise<{ updatedBooks: BookDocument[]; errors: any[] }> {
+    console.log(`Update Multiple Books`);
+
+    const updatedBooks = [];
+    const errors = [];
+
+    for (const { id, ...updateData } of updateDtos.updates) {
+      console.log(`Updating book with ID: ${id}`);
+
+      try {
+        // Verifica se l'ISBN esiste già per un altro libro
+        if (updateData.ISBN && (await this.checkISBN(updateData.ISBN))) {
+          const existingBook = await this.bookModel
+            .findOne({ ISBN: updateData.ISBN })
+            .exec();
+          if (existingBook && existingBook._id.toString() !== id) {
+            errors.push({
+              id,
+              error: `ISBN ${updateData.ISBN} is already in use by another book`,
+            });
+            continue;
+          }
+        }
+
+        // Trova e aggiorna il libro nel database
+        const bookToUpdate = await this.bookModel.findById(id);
+
+        // Se il libro non viene trovato, invia un'eccezione
+        if (!bookToUpdate) {
+          // throw new NotFoundException(`Book with ID ${id} not found`);
+          errors.push({ id, error: `Book with ID ${id} not found` });
+          continue;
+        }
+
+        const updatedBook = new this.bookModel(updateData);
+
+        await updatedBook.save();
+
+        // Aggiunge il libro aggiornato all'array updatedBooks
+        updatedBooks.push(updatedBook);
+      } catch (error) {
+        errors.push({ id, error: error.message });
+      }
+    }
+
+    // Restituisce l'array di libri aggiornati
+    console.log(`Updated Books: ${updatedBooks}`);
     console.log('Errors:', errors);
 
     return { updatedBooks, errors };
