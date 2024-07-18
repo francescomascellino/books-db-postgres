@@ -4,6 +4,7 @@ import {
   PaginateResult,
 } from 'mongoose';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -187,6 +188,21 @@ export class BookService {
     updateBookDto: UpdateBookDto,
   ): Promise<BookDocument> {
     console.log(`Update One. Book ID: ${id}`);
+
+    // Verifica se l'ISBN esiste già per un altro libro
+    // Cerca se nel DB esiste un libro con lo stesso ISBN
+    if (updateBookDto.ISBN && (await this.checkISBN(updateBookDto.ISBN))) {
+      const existingBook = await this.bookModel
+        .findOne({ ISBN: updateBookDto.ISBN })
+        .exec();
+
+      // Se l'id del libro esisente nel DB è diverso dall'id libro da aggiornare chestiamo ciclando, vuol dire che stiamo cercando di aggiornare l'ISBN del libro con un ISBN assegnato ad un altro libro esistente!
+      if (existingBook._id.toString() !== id) {
+        throw new BadRequestException(
+          `ISBN ${updateBookDto.ISBN} already in use by another Book`,
+        );
+      }
+    }
 
     const book = await this.bookModel
       .findByIdAndUpdate(id, updateBookDto, { new: true })

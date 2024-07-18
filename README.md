@@ -243,21 +243,29 @@ export class BookService {
   ): Promise<BookDocument> {
     console.log(`Update One. Book ID: ${id}`);
 
-    const book = await this.bookModel
-      .findByIdAndUpdate(id, updateBookDto, { new: true })
-      .exec();
+    // Cerca il libro da aggiornare nel database
+    const bookToUpdate = await this.bookModel.findById(id).exec();
 
-    if (!book) {
+    if (!bookToUpdate) {
       throw new NotFoundException(`Book with ID ${id} not found`);
     }
 
-    return book;
-  }
+    // Verifica se l'ISBN nel DTO è diverso da quello attuale e se è già utilizzato da un altro libro
+    if (updateBookDto.ISBN && updateBookDto.ISBN !== bookToUpdate.ISBN) {
+      const existingBook = await this.bookModel
+        .findOne({ ISBN: updateBookDto.ISBN })
+        .exec();
 
-  async remove(id: string): Promise<BookDocument> {
-    console.log(`Delete One. Book ID: ${id}`);
+      if (existingBook._id.toString() !== id) {
+        throw new BadRequestException(
+          `ISBN ${updateBookDto.ISBN} already in use by another Book`,
+        );
+      }
+    }
 
-    const book = await this.bookModel.findByIdAndDelete(id);
+    const book = await this.bookModel
+      .findByIdAndUpdate(id, updateBookDto, { new: true })
+      .exec();
 
     if (!book) {
       throw new NotFoundException(`Book with ID ${id} not found`);
@@ -1536,6 +1544,39 @@ async createMultipleBooks(
 
   return { createdBooks, errors };
 }
+
+// checkISBN() ci permette anche di migliorare metodi come update():
+async update(
+    id: string,
+    updateBookDto: UpdateBookDto,
+  ): Promise<BookDocument> {
+    console.log(`Update One. Book ID: ${id}`);
+
+    // Verifica se l'ISBN esiste già per un altro libro
+    // Cerca se nel DB esiste un libro con lo stesso ISBN
+    if (updateBookDto.ISBN && (await this.checkISBN(updateBookDto.ISBN))) {
+      const existingBook = await this.bookModel
+        .findOne({ ISBN: updateBookDto.ISBN })
+        .exec();
+
+      // Se l'id del libro esisente nel DB è diverso dall'id libro da aggiornare chestiamo ciclando, vuol dire che stiamo cercando di aggiornare l'ISBN del libro con un ISBN assegnato ad un altro libro esistente!
+      if (existingBook._id.toString() !== id) {
+        throw new BadRequestException(
+          `ISBN ${updateBookDto.ISBN} already in use by another Book`,
+        );
+      }
+    }
+
+    const book = await this.bookModel
+      .findByIdAndUpdate(id, updateBookDto, { new: true })
+      .exec();
+
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    return book;
+  }
 ```
 
 ***src/resources/book/book.controller.ts***
