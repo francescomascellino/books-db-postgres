@@ -19,7 +19,7 @@ import {
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { OrderEnum } from '../enum/order.enum';
 import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
-import { createPagLinks } from '../helpers/PostgreSQLhelpers';
+import { createPagLinks, handleISBNcheck } from '../helpers/PostgreSQLhelpers';
 
 @Injectable()
 export class PostbookService {
@@ -220,7 +220,10 @@ export class PostbookService {
       await this.postbookRepository.save(recordToUpdate);
     } catch (error) {
       if (error) {
+        // Gestione dell'errore di vincolo univoco
+        handleISBNcheck(error, updatePostbookDto);
         console.log(`Error: ${error.message}`);
+
         throw new BadRequestException(error.message);
       }
       throw new InternalServerErrorException('Failed to update the book.');
