@@ -47,7 +47,9 @@ export class PostbookService {
       if (error) {
         // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
         const errorMessage = handleISBNcheckNoExc(error, newPostbook);
+
         console.log(`Error: ${error.message}`);
+
         // Lanciamo l'exception con il messaggio personalizzato
         throw new BadRequestException(errorMessage);
       }
@@ -60,6 +62,7 @@ export class PostbookService {
     return newPostbook;
   }
 
+  // Questo metodo non gestisce a dovere le chiavi univoche. resta qui come reference
   async createMultiple(
     createMultiplePostbooksDto: CreateMultiplePostbooksDto,
   ): Promise<Postbook[]> {
@@ -107,6 +110,7 @@ export class PostbookService {
         newBooks.push(newBook);
       } catch (error) {
         console.error(`Error creating book ${newBook.title}: ${error.message}`);
+        // Gestione dell'errore di vincolo univoco
         // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
         const errorMessage = handleISBNcheckNoExc(error, newBook);
 
@@ -329,9 +333,11 @@ export class PostbookService {
           await this.postbookRepository.save(bookToUpdate);
         } catch (error) {
           // Gestione dell'errore di vincolo univoco
-          // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+          // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
           const errorMessage = handleISBNcheckNoExc(error, bookToUpdate);
           console.log(`Error: ${errorMessage}`);
+
+          // Se c'è un messaggio di errore, pushiamolo nell'array dei messaggi di errore
           errors.push({
             id: bookToUpdate.id,
             error: `Error updating book ${bookToUpdate.title} with id ${id}: ${errorMessage}`,

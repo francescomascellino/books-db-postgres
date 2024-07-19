@@ -4214,6 +4214,7 @@ async newCreateMultipleBooks(
         newBooks.push(newBook);
       } catch (error) {
         console.error(`Error creating book ${newBook.title}: ${error.message}`);
+
         // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
         const errorMessage = handleISBNcheckNoExc(error, newBook);
 
@@ -4244,9 +4245,11 @@ async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {
       await this.postbookRepository.save(newPostbook);
     } catch (error) {
       if (error) {
+
         // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
         const errorMessage = handleISBNcheckNoExc(error, newPostbook);
         console.log(`Error: ${error.message}`);
+
         // Lanciamo l'exception con il messaggio personalizzato
         throw new BadRequestException(errorMessage);
       }
@@ -4286,6 +4289,7 @@ Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
       await this.postbookRepository.save(recordToUpdate);
     } catch (error) {
       if (error) {
+
         // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
         const errorMessage = handleISBNcheckNoExc(error, updatePostbookDto);
         console.log(`Error: ${errorMessage}`);
@@ -4313,11 +4317,9 @@ Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
     const errors = [];
 
     for (const updateBookData of updateMultiplePostbooksDto.postbooks) {
-      // Estraiamo l'id dall'elemento updateBookData dell'array di libri da aggiornare postbooks del DTO updateMultiplePostbooksDto che stiamo attualmente ciclando
       const { id } = updateBookData;
 
       try {
-        // Cerchiamo il Libro da aggiornare usando l'id estratto
         const bookToUpdate = await this.postbookRepository.findOne({
           where: { id, is_deleted: false },
         });
@@ -4333,18 +4335,18 @@ Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
 
         console.log(`Found "${bookToUpdate.title}" with id ${id}`);
 
-        // Se abbiamo trovato il libro bookToUpdate, copiamo i dati updateBookData del DTO in bookToUpdate
-        // In questo modo adesso bookToUpdate contiene adesso i dati da aggiornare inviati dalla query
         Object.assign(bookToUpdate, updateBookData);
 
         try {
-          // Salviamo il record aggiornato bookToUpdate nel DB
           await this.postbookRepository.save(bookToUpdate);
         } catch (error) {
+
           // Gestione dell'errore di vincolo univoco
-          // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+          // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
           const errorMessage = handleISBNcheckNoExc(error, bookToUpdate);
           console.log(`Error: ${errorMessage}`);
+
+          // Se c'è un messaggio di errore, pushiamolo nell'array dei messaggi di errore
           errors.push({
             id: bookToUpdate.id,
             error: `Error updating book ${bookToUpdate.title} with id ${id}: ${errorMessage}`,
@@ -4356,7 +4358,6 @@ Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
           `Book "${bookToUpdate.title}" updated at ${bookToUpdate.updated_at}`,
         );
 
-        // Inseriamo il record appena salvato nell'array dei risultati updatedBooks
         updatedBooks.push(bookToUpdate);
       } catch (error) {
         console.error(`Error updating book with id ${id}: ${error.message}`);
