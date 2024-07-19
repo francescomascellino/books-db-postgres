@@ -28,6 +28,17 @@ async function bootstrap() {
     .setDescription('The Books API')
     .setVersion('1.0')
     .addTag('Books')
+    // AGGIUNGIAMO L'AUTORIZZAZIONE PER POTER TESTARE LE OPERAZIONI
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description:
+          'Enter JWT token obtained after logging in. Example: Bearer [JWT]',
+      },
+      'Authorization', // Nome dello schema di sicurezza
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('bookapi', app, document);

@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 // import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserService } from '../user/user.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
 @ApiTags('Auth (MongoDB)') // Identificativo sezione per Swagger
@@ -22,6 +22,14 @@ export class AuthController {
    * @returns Un oggetto contenente il token di accesso JWT se l'accesso è riuscito, altrimenti genera un'eccezione di autorizzazione.
    */
   @Post('login')
+  @ApiOperation({
+    summary:
+      'Permette a un Utente registrato di effettuare il login e ottenere un JWT',
+  })
+  @ApiBody({
+    type: LoginDto,
+    description: 'Dati per il login',
+  })
   async login(@Body() loginDto: LoginDto) {
     // Controlla se le credenziali di accesso dell'utente sono valide
     const user = await this.authService.validateUser(

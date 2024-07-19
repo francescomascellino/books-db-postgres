@@ -18,10 +18,17 @@ import { UpdateMultipleBooksDto } from './dto/update-multiple-books.dto';
 import { BookDocument } from './schemas/book.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginateResult } from 'mongoose';
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 
 @Controller('book')
 @ApiTags('Book (MongoDB)') // Identificativo sezione per Swagger
+@ApiBearerAuth('Authorization') // Nome dello schema di sicurezza per Swagger
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
@@ -32,10 +39,6 @@ export class BookController {
     type: CreateBookDto,
     description: 'Dati per la creazione del nuovo record',
   })
-  // @ApiQuery({
-  //   type: CreateBookDto,
-  //   description: 'Dati per la creazione del nuovo record',
-  // })
   create(@Body() createBookDto: CreateBookDto) {
     return this.bookService.create(createBookDto);
   }

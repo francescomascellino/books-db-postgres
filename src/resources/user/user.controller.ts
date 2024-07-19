@@ -14,7 +14,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDocument } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 
 /**
  * Interfaccia che estende l'interfaccia Request di Express per includere le informazioni dell'utente autenticato.
@@ -28,16 +34,27 @@ export interface ExtendedRequest extends Request {
 }
 @Controller('user')
 @ApiTags('User (MongoDB)') // Identificativo sezione per Swagger
+@ApiBearerAuth('Authorization') // Nome dello schema di sicurezza per Swagger
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
+  @ApiOperation({
+    summary: 'Aggiorna i dati i un Utente registrato',
+  })
+  @ApiBody({
+    type: CreateUserDto,
+    description: 'Dati per la modifica del record',
+  })
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  @ApiOperation({
+    summary: 'Elenca tutti i documenti User',
+  })
   findAll(@Req() req: ExtendedRequest): Promise<UserDocument[]> {
     const requestingUser = req.user;
     return this.userService.findAll(requestingUser);
@@ -45,6 +62,13 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
+  @ApiOperation({
+    summary: 'Ottiene un record dal Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da recuperare',
+  })
   findOne(@Param('id') id: string): Promise<UserDocument> {
     return this.userService.findOne(id);
   }
@@ -60,6 +84,17 @@ export class UserController {
    */
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Aggiorna un record dal Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da aggiornare',
+  })
+  @ApiBody({
+    type: UpdateUserDto,
+    description: 'Dati per la modifica del record',
+  })
   update(
     @Req() req: ExtendedRequest,
     @Param('id') id: string,
@@ -72,6 +107,13 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
+  @ApiOperation({
+    summary: 'Elimina definitivamente un Utente dal Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da eliminare',
+  })
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
@@ -85,6 +127,14 @@ export class UserController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('/admin/search/:username')
+  @ApiOperation({
+    summary:
+      'Permette a un Admin di ottenere i dati di un Utente tramite Username',
+  })
+  @ApiQuery({
+    name: 'username',
+    description: 'Username del record da eliminare',
+  })
   findByUsername(
     @Req() req: ExtendedRequest,
     @Param('username') username: string,
@@ -103,6 +153,17 @@ export class UserController {
    * @returns Il documento dell'utente aggiornato.
    */
   @Post(':userId/borrow/:bookId')
+  @ApiOperation({
+    summary: 'Permette a un Utente di prendere in prestito un libro',
+  })
+  @ApiQuery({
+    name: 'userId',
+    description: "ID dell'Utente che vuole prendere in prestitoil libro",
+  })
+  @ApiQuery({
+    name: 'bookId',
+    description: 'ID del libro da prendere in prestito',
+  })
   async borrowBook(
     @Param('userId') userId: string,
     @Param('bookId') bookId: string,
@@ -118,6 +179,17 @@ export class UserController {
    * @returns Il documento dell'utente aggiornato.
    */
   @Post(':userId/return/:bookId')
+  @ApiOperation({
+    summary: 'Permette a un Utente di restituire un libro preso in prestito',
+  })
+  @ApiQuery({
+    name: 'userId',
+    description: "ID dell'Utente che vuole prendere restituire il libro",
+  })
+  @ApiQuery({
+    name: 'bookId',
+    description: 'ID del libro da restituire',
+  })
   async returnBook(
     @Param('userId') userId: string,
     @Param('bookId') bookId: string,
