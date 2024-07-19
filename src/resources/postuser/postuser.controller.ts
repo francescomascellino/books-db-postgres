@@ -5,7 +5,7 @@ import { ApiTags } from '@nestjs/swagger';
 // import { UpdatePostuserDto } from './dto/update-postuser.dto';
 
 @Controller('postuser')
-@ApiTags('User (PostgreSQL)')
+@ApiTags('User (PostgreSQL)') // Identificativo sezione per Swagger
 export class PostuserController {
   constructor(private readonly postuserService: PostuserService) {}
   /* 

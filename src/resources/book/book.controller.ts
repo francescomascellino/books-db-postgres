@@ -21,7 +21,7 @@ import { PaginateResult } from 'mongoose';
 import { ApiTags } from '@nestjs/swagger';
 
 @Controller('book')
-@ApiTags('Book (MongoDB)')
+@ApiTags('Book (MongoDB)') // Identificativo sezione per Swagger
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 

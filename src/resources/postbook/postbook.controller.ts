@@ -22,7 +22,7 @@ import { OrderEnum } from '../enum/order.enum';
 import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
 
 @Controller('postbooks')
-@ApiTags('Book (PostgreSQL)')
+@ApiTags('Book (PostgreSQL)') // Identificativo sezione per Swagger
 export class PostbookController {
   constructor(private readonly postbookService: PostbookService) {}
 

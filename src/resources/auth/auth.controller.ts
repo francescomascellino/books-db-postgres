@@ -6,7 +6,7 @@ import { UserService } from '../user/user.service';
 import { ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
-@ApiTags('Auth (MongoDB)')
+@ApiTags('Auth (MongoDB)') // Identificativo sezione per Swagger
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

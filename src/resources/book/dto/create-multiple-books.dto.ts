@@ -15,10 +15,11 @@ export class CreateMultipleBooksDto {
         title: 'Il Signore degli Anelli',
         author: 'J.R.R. Tolkien',
         ISBN: '978-0-618-15600-1',
-        loaned_to: {
-          _id: '66605031a9a8d2847d5b85d5',
-          name: 'Mario',
-        },
+      },
+      {
+        title: 'Cronache del ghiaccio e del fuoco - Il Trono di Spade',
+        author: 'George R.R. Martin',
+        ISBN: '9788804644124',
       },
     ],
     description: 'Elenco dei libri da creare',

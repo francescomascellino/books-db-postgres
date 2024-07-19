@@ -23,19 +23,20 @@ export class CreateBookDto {
   @IsString()
   @MinLength(13)
   @IsNotEmpty()
+  // @IsISBN()
   @ApiProperty({
     example: '9781234567890',
     description: 'ISBN del libro',
   })
   public ISBN: string;
 
-  @ApiProperty({
-    example: {
-      _id: '66605031a9a8d2847d5b85d5',
-      name: 'Mario',
-    },
-    description: 'Utente a cui è stato prestato il libro',
-  })
+  // @ApiProperty({
+  //   example: {
+  //     _id: '66605031a9a8d2847d5b85d5',
+  //     name: 'Mario',
+  //   },
+  //   description: 'Utente a cui è stato prestato il libro',
+  // })
   public loaned_to?: string; // vogliamo che tutti i campi siano obbligatori alla creazione di un libro tranne loaned_to
 
   /* public constructor(opts: {

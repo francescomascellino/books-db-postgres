@@ -27,7 +27,7 @@ export interface ExtendedRequest extends Request {
   user: UserDocument;
 }
 @Controller('user')
-@ApiTags('User (MongoDB)')
+@ApiTags('User (MongoDB)') // Identificativo sezione per Swagger
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
