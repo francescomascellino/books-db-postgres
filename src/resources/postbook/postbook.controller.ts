@@ -48,6 +48,16 @@ export class PostbookController {
     return this.postbookService.createMultiple(createMultiplePostbooksDto);
   }
 
+  @Post('bulk/newcreate')
+  newCreateMultipleBooks(
+    @Body() createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<{ newBooks: Postbook[]; errors: any[] }> {
+    console.log('Creating multiple Books');
+    return this.postbookService.newCreateMultipleBooks(
+      createMultiplePostbooksDto,
+    );
+  }
+
   @Patch('bulk/update')
   async updateMultipleBooks(
     @Body() updateMultiplePostbooksDto: UpdateMultiplePostbooksDto,

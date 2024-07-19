@@ -2,7 +2,10 @@ import { BadRequestException } from '@nestjs/common';
 import { PaginationLinksDto } from '../postbook/dto/paginated-results.dto';
 import { Request } from 'express';
 
-export function handleISBNcheck(error: any, updatePostbookDto: any): void {
+export function handleISBNcheck(
+  error: any,
+  updatePostbookDto: any,
+): string | null {
   // Gestione dell'errore di vincolo univoco
   // codice errore per violazione del vincolo univoco in PostgreSQL
   if (error.code === '23505') {
@@ -17,6 +20,24 @@ export function handleISBNcheck(error: any, updatePostbookDto: any): void {
       );
     }
   }
+  return null;
+}
+
+// SENZA EXCEPTION
+export function handleISBNcheckNoExc(
+  error: any,
+  updatePostbookDto: any,
+): string | null {
+  if (error.code === '23505') {
+    console.log(`${error}. Code ${error.code}. Details: ${error.detail}`);
+    if (error.detail.includes('ISBN')) {
+      console.log(
+        `ISBN ${updatePostbookDto.ISBN} already in use by another Book`,
+      );
+      return `ISBN ${updatePostbookDto.ISBN} already in use by another Book`;
+    }
+  }
+  return null;
 }
 
 /**

@@ -19,7 +19,11 @@ import {
 import { Request } from 'express'; // Importiamo sempre Request da express
 import { OrderEnum } from '../enum/order.enum';
 import { UpdateMultiplePostbooksDto } from './dto/update-multiple-postbooks.dto';
-import { createPagLinks, handleISBNcheck } from '../helpers/PostgreSQLhelpers';
+import {
+  createPagLinks,
+  // handleISBNcheck,
+  handleISBNcheckNoExc,
+} from '../helpers/PostgreSQLhelpers';
 
 @Injectable()
 export class PostbookService {
@@ -41,8 +45,11 @@ export class PostbookService {
       await this.postbookRepository.save(newPostbook);
     } catch (error) {
       if (error) {
+        // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+        const errorMessage = handleISBNcheckNoExc(error, newPostbook);
         console.log(`Error: ${error.message}`);
-        throw new BadRequestException(error.message);
+        // Lanciamo l'exception con il messaggio personalizzato
+        throw new BadRequestException(errorMessage);
       }
       console.log(`Error: Failed to create the book.`);
       throw new InternalServerErrorException('Failed to create the book.');
@@ -66,6 +73,7 @@ export class PostbookService {
       await this.postbookRepository.save(newPostbooks);
     } catch (error) {
       if (error) {
+        // handleISBNcheck(error, newPostbooks);
         console.log(`Error: ${error.message}`);
         throw new BadRequestException(error.message);
       }
@@ -75,6 +83,50 @@ export class PostbookService {
 
     console.log(`New Books Created!`, newPostbooks);
     return newPostbooks; // Ritorniamo i libri che abbiamo salvato come response
+  }
+
+  async newCreateMultipleBooks(
+    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<{
+    newBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const newBooks = [];
+    const errors = [];
+
+    for (const newBook of createMultiplePostbooksDto.postbooks) {
+      // Estraiamo l'id dall'elemento updateBookData dell'array di libri da aggiornare postbooks del DTO updateMultiplePostbooksDto che stiamo attualmente ciclando
+
+      try {
+        // Salviamo il record aggiornato bookToUpdate nel DB
+        await this.postbookRepository.save(newBook);
+
+        console.log(`Book "${newBook.title} created"`);
+
+        // Inseriamo il record appena salvato nell'array dei risultati updatedBooks
+        newBooks.push(newBook);
+      } catch (error) {
+        console.error(`Error creating book ${newBook.title}: ${error.message}`);
+        // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
+        const errorMessage = handleISBNcheckNoExc(error, newBook);
+
+        // Se c'è un messaggio di errore, pushiamolo nell'array dei messaggi di errore
+        if (errorMessage) {
+          errors.push({
+            title: newBook.title,
+            error: errorMessage,
+          });
+        } else {
+          errors.push({
+            title: newBook.title,
+            error: `Error creating book ${newBook.title}: ${error.message}`,
+          });
+        }
+        continue;
+      }
+    }
+
+    return { newBooks, errors };
   }
 
   async findAll(): Promise<Postbook[]> {
@@ -221,10 +273,12 @@ export class PostbookService {
     } catch (error) {
       if (error) {
         // Gestione dell'errore di vincolo univoco
-        handleISBNcheck(error, updatePostbookDto);
-        console.log(`Error: ${error.message}`);
+        // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+        const errorMessage = handleISBNcheckNoExc(error, updatePostbookDto);
+        console.log(`Error: ${errorMessage}`);
 
-        throw new BadRequestException(error.message);
+        // Lanciamo l'exception con il messaggio personalizzato
+        throw new BadRequestException(errorMessage);
       }
       throw new InternalServerErrorException('Failed to update the book.');
     }
@@ -274,10 +328,13 @@ export class PostbookService {
           // Salviamo il record aggiornato bookToUpdate nel DB
           await this.postbookRepository.save(bookToUpdate);
         } catch (error) {
-          console.log(`Error: ${error.message}`);
+          // Gestione dell'errore di vincolo univoco
+          // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+          const errorMessage = handleISBNcheckNoExc(error, bookToUpdate);
+          console.log(`Error: ${errorMessage}`);
           errors.push({
             id: bookToUpdate.id,
-            error: `Error updating book ${bookToUpdate.title} with id ${id}: ${error.message}`,
+            error: `Error updating book ${bookToUpdate.title} with id ${id}: ${errorMessage}`,
           });
           continue;
         }
@@ -292,12 +349,12 @@ export class PostbookService {
         console.error(`Error updating book with id ${id}: ${error.message}`);
         if (error instanceof QueryFailedError) {
           errors.push({
-            id: null,
+            id: id,
             error: `Failed to update book with id ${id} due to a database error.`,
           });
         } else {
           errors.push({
-            id: null,
+            id: id,
             error: `Error updating book with id ${id}: ${error.message}`,
           });
         }

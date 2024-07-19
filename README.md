@@ -4088,6 +4088,299 @@ async paginateAll(
   }
 ```
 
+Creiamo ad esempio un helper per gestire l'errore di chiave univoca di PosteGreSQL in modo che anxhé inviare *"QueryFailedError: un valore chiave duplicato viola il vincolo univoco "UQ_554e5ab6fc052edcc1677f1fd9d"* invii *ISBN 9788877827022 already in use by another Book*
+***src\resources\helpers\PostgreSQLhelpers.ts***
+```ts
+import { BadRequestException } from '@nestjs/common';
+
+export function handleISBNcheck(error: any, updatePostbookDto: any): void {
+  // Gestione dell'errore di vincolo univoco
+  // codice errore per violazione del vincolo univoco in PostgreSQL
+  if (error.code === '23505') {
+    console.log(`${error}. Code ${error.code}. Details: ${error.detail}`);
+    // Verifica se il messaggio contiene 'ISBN'
+    if (error.detail.includes('ISBN')) {
+      console.log(
+        `ISBN ${updatePostbookDto.ISBN} already in use by another Book`,
+      );
+      throw new BadRequestException(
+        `ISBN ${updatePostbookDto.ISBN} already in use by another Book`,
+      );
+    }
+  }
+}
+
+// Altri Helpers
+```
+Importiamo l'helper nel nostro service
+***src\resources\postbook\postbook.service.ts***
+```ts
+import { createPagLinks, handleISBNcheck } from '../helpers/PostgreSQLhelpers';
+```
+
+Inseriamo l'helper nei metodi interessati:
+```ts
+async update(
+    id: number,
+    updatePostbookDto: UpdatePostbookDto,
+  ): Promise<Postbook> {
+    const recordToUpdate = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!recordToUpdate) {
+      console.log(`Book with ID ${id} not found`);
+      throw new NotFoundException(`Book with id ${id} not found`);
+    }
+
+    console.log(`Found "${recordToUpdate.title}"`);
+
+    Object.assign(recordToUpdate, updatePostbookDto);
+
+    try {
+      await this.postbookRepository.save(recordToUpdate);
+    } catch (error) {
+      if (error) {
+        // Gestione dell'errore di vincolo univoco usando l'Helper
+        handleISBNcheck(error, updatePostbookDto);
+
+        console.log(`Error: ${error.message}`);
+
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException('Failed to update the book.');
+    }
+
+    console.log(
+      `Book "${recordToUpdate.title}" updated at ${recordToUpdate.updated_at}`,
+    );
+
+    return recordToUpdate;
+  }
+```
+
+Questo metodo però, lanciando un'eccezione, blocca il codice quando dobbiamo manipolare più elementi. Abbiamo quindi bisogno di estrarre il messaggio di errore senza lanciare l'eccezione e gestirla succesivamente.
+Creiamo quindi un metodo similenell'helper che non lanci eccezioni (per completezza di ripasso lasciamo il precedente, ma è inutile) e modifichiamo i metodi di conseguenza.
+***src\resources\helpers\PostgreSQLhelpers.ts***
+```ts
+export function handleISBNcheckNoExc(
+  error: any,
+  updatePostbookDto: any,
+): string | null {
+  if (error.code === '23505') {
+    console.log(`${error}. Code ${error.code}. Details: ${error.detail}`);
+    if (error.detail.includes('ISBN')) {
+      console.log(
+        `ISBN ${updatePostbookDto.ISBN} already in use by another Book`,
+      );
+      return `ISBN ${updatePostbookDto.ISBN} already in use by another Book`;
+    }
+  }
+  return null;
+}
+```
+
+nel service:
+***src\resources\postbook\postbook.service.ts***
+```ts
+// Importiamo il metodo
+import {
+  createPagLinks,
+  handleISBNcheck,
+  handleISBNcheckNoExc,
+} from '../helpers/PostgreSQLhelpers';
+```
+
+Aggiorniamo i metodi del servizio
+```ts
+// Create Multiple diverrebbe così.
+// L'originale resta nel codice come test
+async newCreateMultipleBooks(
+    createMultiplePostbooksDto: CreateMultiplePostbooksDto,
+  ): Promise<{
+    newBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const newBooks = [];
+    const errors = [];
+
+    for (const newBook of createMultiplePostbooksDto.postbooks) {
+      try {
+
+        await this.postbookRepository.save(newBook);
+
+        console.log(`Book "${newBook.title} created"`);
+
+        newBooks.push(newBook);
+      } catch (error) {
+        console.error(`Error creating book ${newBook.title}: ${error.message}`);
+        // Quando manipoliamo più elementi, dopo aver assegnato il messaggio alla variabile, lo pushiamo invece nell'array dei messaggi di errore
+        const errorMessage = handleISBNcheckNoExc(error, newBook);
+
+        // Se c'è un messaggio di errore, pushiamolo nell'array dei messaggi di errore
+        if (errorMessage) {
+          errors.push({
+            title: newBook.title,
+            error: errorMessage,
+          });
+        } else {
+          errors.push({
+            title: newBook.title,
+            error: `Error creating book ${newBook.title}: ${error.message}`,
+          });
+        }
+        continue;
+      }
+    }
+
+    return { newBooks, errors };
+  }
+```
+```ts
+async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {
+    const newPostbook = this.postbookRepository.create(createPostbookDto);
+
+    try {
+      await this.postbookRepository.save(newPostbook);
+    } catch (error) {
+      if (error) {
+        // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+        const errorMessage = handleISBNcheckNoExc(error, newPostbook);
+        console.log(`Error: ${error.message}`);
+        // Lanciamo l'exception con il messaggio personalizzato
+        throw new BadRequestException(errorMessage);
+      }
+      console.log(`Error: Failed to create the book.`);
+      throw new InternalServerErrorException('Failed to create the book.');
+    }
+
+    console.log(`New Book Created!`, newPostbook);
+
+    return newPostbook;
+  }
+```
+
+
+Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
+```ts
+  async update(
+    id: number,
+    updatePostbookDto: UpdatePostbookDto,
+  ): Promise<Postbook> {
+    // Cerchiamo il Libro da aggiornare
+    const recordToUpdate = await this.postbookRepository.findOne({
+      where: { id, is_deleted: false },
+    });
+
+    if (!recordToUpdate) {
+      console.log(`Book with ID ${id} not found`);
+      throw new NotFoundException(`Book with id ${id} not found`);
+    }
+
+    console.log(`Found "${recordToUpdate.title}"`);
+
+    // Copiamo i dati del DTO in recordToUpdate
+    Object.assign(recordToUpdate, updatePostbookDto);
+
+    try {
+      // Salviamo il record
+      await this.postbookRepository.save(recordToUpdate);
+    } catch (error) {
+      if (error) {
+        // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+        const errorMessage = handleISBNcheckNoExc(error, updatePostbookDto);
+        console.log(`Error: ${errorMessage}`);
+
+        // Lanciamo l'exception con il messaggio personalizzato
+        throw new BadRequestException(errorMessage);
+      }
+      throw new InternalServerErrorException('Failed to update the book.');
+    }
+
+    console.log(
+      `Book "${recordToUpdate.title}" updated at ${recordToUpdate.updated_at}`,
+    );
+
+    return recordToUpdate;
+  }
+
+  async updateMultipleBooks(
+    updateMultiplePostbooksDto: UpdateMultiplePostbooksDto,
+  ): Promise<{
+    updatedBooks: Postbook[];
+    errors: { id: number; error: string }[];
+  }> {
+    const updatedBooks = [];
+    const errors = [];
+
+    for (const updateBookData of updateMultiplePostbooksDto.postbooks) {
+      // Estraiamo l'id dall'elemento updateBookData dell'array di libri da aggiornare postbooks del DTO updateMultiplePostbooksDto che stiamo attualmente ciclando
+      const { id } = updateBookData;
+
+      try {
+        // Cerchiamo il Libro da aggiornare usando l'id estratto
+        const bookToUpdate = await this.postbookRepository.findOne({
+          where: { id, is_deleted: false },
+        });
+
+        if (!bookToUpdate) {
+          console.log(`Book with id ${id} not found`);
+          errors.push({
+            id: null,
+            error: `Book with id ${id} not found`,
+          });
+          continue;
+        }
+
+        console.log(`Found "${bookToUpdate.title}" with id ${id}`);
+
+        // Se abbiamo trovato il libro bookToUpdate, copiamo i dati updateBookData del DTO in bookToUpdate
+        // In questo modo adesso bookToUpdate contiene adesso i dati da aggiornare inviati dalla query
+        Object.assign(bookToUpdate, updateBookData);
+
+        try {
+          // Salviamo il record aggiornato bookToUpdate nel DB
+          await this.postbookRepository.save(bookToUpdate);
+        } catch (error) {
+          // Gestione dell'errore di vincolo univoco
+          // Quando manipoliamo un solo elemento, dopo aver assegnato il messaggio alla variabile, possiamo lanciarlo come Exception
+          const errorMessage = handleISBNcheckNoExc(error, bookToUpdate);
+          console.log(`Error: ${errorMessage}`);
+          errors.push({
+            id: bookToUpdate.id,
+            error: `Error updating book ${bookToUpdate.title} with id ${id}: ${errorMessage}`,
+          });
+          continue;
+        }
+
+        console.log(
+          `Book "${bookToUpdate.title}" updated at ${bookToUpdate.updated_at}`,
+        );
+
+        // Inseriamo il record appena salvato nell'array dei risultati updatedBooks
+        updatedBooks.push(bookToUpdate);
+      } catch (error) {
+        console.error(`Error updating book with id ${id}: ${error.message}`);
+        if (error instanceof QueryFailedError) {
+          errors.push({
+            id: id,
+            error: `Failed to update book with id ${id} due to a database error.`,
+          });
+        } else {
+          errors.push({
+            id: id,
+            error: `Error updating book with id ${id}: ${error.message}`,
+          });
+        }
+      }
+    }
+
+    return { updatedBooks, errors };
+  }
+
+```
+
+
 ## Swagger
 Swagger ci permetet di creare un endpoint che descrive la nostra REST API
 E' Necessario installare Swagger
