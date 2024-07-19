@@ -18,7 +18,7 @@ import { UpdateMultipleBooksDto } from './dto/update-multiple-books.dto';
 import { BookDocument } from './schemas/book.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PaginateResult } from 'mongoose';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @Controller('book')
 @ApiTags('Book (MongoDB)') // Identificativo sezione per Swagger
@@ -27,6 +27,15 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
+  @ApiOperation({ summary: 'Creea un nuovo documento mongo "Book"' })
+  @ApiBody({
+    type: CreateBookDto,
+    description: 'Dati per la creazione del nuovo record',
+  })
+  // @ApiQuery({
+  //   type: CreateBookDto,
+  //   description: 'Dati per la creazione del nuovo record',
+  // })
   create(@Body() createBookDto: CreateBookDto) {
     return this.bookService.create(createBookDto);
   }
@@ -37,6 +46,17 @@ export class BookController {
     return this.bookService.findAll();
   } */
   @Get()
+  @ApiOperation({
+    summary: 'Elenca tutti i documenti Book usando la paginazione',
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'La pagina della della lista dei risultati da visualizzare',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    description: 'Il numero di elementi per pagina da visualizzare',
+  })
   async findAll(
     @Query('page') page: number,
     @Query('pageSize') pageSize: number,
@@ -48,18 +68,36 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Get('loaned')
+  @ApiOperation({
+    summary: 'Elenca tutti i documenti Book attualmente in prestito',
+  })
   getLoanedBooks(): Promise<BookDocument[]> {
     return this.bookService.loanedBooks();
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('available')
+  @ApiOperation({
+    summary: 'Elenca tutti i documenti Book attualmente in disponibili',
+  })
   async getAvailableBooks(): Promise<BookDocument[]> {
     return this.bookService.availableBooks();
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('delete')
+  @ApiOperation({
+    summary:
+      'Elenca tutti i documenti attualmente nel cestino usando la paginazione',
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'La pagina della della lista dei risultati da visualizzare',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    description: 'Il numero di elementi per pagina da visualizzare',
+  })
   async getSoftDeleted(
     @Query('page') page: number,
     @Query('pageSize') pageSize: number,
@@ -71,12 +109,30 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
+  @ApiOperation({
+    summary: 'Ottiene un record dal Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da recuperare',
+  })
   findOne(@Param('id') id: string): Promise<BookDocument> {
     return this.bookService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Aggiorna un record dal Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da aggiornare',
+  })
+  @ApiBody({
+    type: UpdateBookDto,
+    description: 'Dati per la modifica del record',
+  })
   update(
     @Param('id') id: string,
     @Body() updateBookDto: UpdateBookDto,
@@ -86,6 +142,13 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Post('bulk/create')
+  @ApiOperation({
+    summary: 'Crea più documenti contemporaneamente',
+  })
+  @ApiBody({
+    type: CreateMultipleBooksDto,
+    description: 'Dati per la creazione dei record',
+  })
   createMultiple(
     @Body() createMultipleBooksDto: CreateMultipleBooksDto,
   ): Promise<{ createdBooks: BookDocument[]; errors: any[] }> {
@@ -94,6 +157,13 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('bulk/update')
+  @ApiOperation({
+    summary: 'Aggiorna più documenti contemporaneamente',
+  })
+  @ApiBody({
+    type: UpdateMultipleBooksDto,
+    description: 'Dati per la modifica dei record',
+  })
   updateMultiple(
     @Body() updateMultipleBooksDto: UpdateMultipleBooksDto,
   ): Promise<{ updatedBooks: BookDocument[]; errors: any[] }> {
@@ -102,24 +172,53 @@ export class BookController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/delete/:id')
+  @ApiOperation({
+    summary: 'Recupera un record nel cestino del Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da recuperare',
+  })
   findOneSoftDeleted(@Param('id') id: string): Promise<BookDocument> {
     return this.bookService.findOneSoftDeleted(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('/delete/:id')
+  @ApiOperation({
+    summary:
+      'Elimina definitivamente un record nel cestino del Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da eliminare',
+  })
   remove(@Param('id') id: string): Promise<BookDocument> {
     return this.bookService.remove(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('delete/:id')
+  @ApiOperation({
+    summary: 'Sposta un record nel cestino del Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da cestinare',
+  })
   softDelete(@Param('id') id: string): Promise<BookDocument> {
     return this.bookService.softDelete(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('restore/:id')
+  @ApiOperation({
+    summary: 'Ripristina un record dal cestino del Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID del record da ripristinare',
+  })
   restore(@Param('id') id: string): Promise<BookDocument> {
     return this.bookService.restore(id);
   }
@@ -135,6 +234,14 @@ export class BookController {
    */
   @UseGuards(JwtAuthGuard)
   @Delete('bulk/delete')
+  @ApiOperation({
+    summary:
+      'Elimina definitivamente più record nel cestino del Database tramite ID',
+  })
+  @ApiQuery({
+    name: 'id',
+    description: 'ID dei record da eliminare',
+  })
   removeMultiple(
     @Body() deleteMultipleBooksDto: DeleteMultipleBooksDto,
   ): Promise<{ deletedBooks: BookDocument[]; errors: any[] }> {

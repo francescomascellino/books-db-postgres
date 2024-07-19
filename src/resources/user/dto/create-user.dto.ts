@@ -1,5 +1,5 @@
 import { Prop } from '@nestjs/mongoose';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsNotEmpty,
@@ -53,7 +53,7 @@ export class CreateUserDto {
 
   @IsString()
   @IsEnum(RoleEnum)
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'user',
     description: "Ruolo dell'utente",
   })

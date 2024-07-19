@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
 import { Prop } from '@nestjs/mongoose';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   MinLength,
@@ -53,7 +53,7 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
 
   @IsString()
   @IsEnum(RoleEnum)
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'user',
     description: "Ruolo dell'utente",
   })
