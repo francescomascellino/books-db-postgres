@@ -4260,7 +4260,6 @@ async create(createPostbookDto: CreatePostbookDto): Promise<Postbook> {
   }
 ```
 
-
 Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
 ```ts
   async update(
@@ -4379,7 +4378,6 @@ Allo stesso modo update() e updateMultiple subiranno le modifche appropriate:
   }
 
 ```
-
 
 ## Swagger
 Swagger ci permetet di creare un endpoint che descrive la nostra REST API
