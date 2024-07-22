@@ -4430,4 +4430,123 @@ async function bootstrap() {
 bootstrap();
 ```
 
+Se alcuni endpoint sono protetti da autorizzazione dobbiamo aggiungerla alla configurazione di Swagger:
+```ts
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    credentials: true, 
+  });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+    }),
+  );
+
+  const config = new DocumentBuilder()
+    .setTitle('Books example API')
+    .setDescription('The Books API')
+    .setVersion('1.0')
+    .addTag('Books')
+    // AGGIUNGIAMO L'AUTORIZZAZIONE PER POTER TESTARE LE OPERAZIONI
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description:
+          'Enter JWT token obtained after logging in. Example: [JWT]',
+      },
+      'Authorization', // Nome dello schema di sicurezza
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('bookapi', app, document);
+
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+Dopodichè indichiamo nel controller lo schema di sicurezza in modo che swagger possa riconoscerlo:
+***src\resources\book\book.controller.ts***
+```ts
+// Altri import
+
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+
+@Controller('book')
+@ApiTags('Book (MongoDB)') // Identificativo sezione per Swagger
+@ApiBearerAuth('Authorization') // Nome dello schema di sicurezza per Swagger
+export class BookController {
+  constructor(private readonly bookService: BookService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  @ApiOperation({ summary: 'Creea un nuovo documento mongo "Book"' })
+  @ApiBody({
+    type: CreateBookDto,
+    description: 'Dati per la creazione del nuovo record',
+  })
+  create(@Body() createBookDto: CreateBookDto) {
+    return this.bookService.create(createBookDto);
+  }
+
+  Get()
+  @ApiOperation({
+    summary: 'Elenca tutti i documenti Book usando la paginazione',
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'La pagina della della lista dei risultati da visualizzare',
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    description: 'Il numero di elementi per pagina da visualizzare',
+  })
+  async findAll(
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+  ): Promise<PaginateResult<BookDocument>> {
+    const pageNumber = page ? Number(page) : 1;
+    const pageSizeNumber = pageSize ? Number(pageSize) : 10;
+    return this.bookService.findAll(pageNumber, pageSizeNumber);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Ottiene un record dal Database tramite ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del record da recuperare',
+  })
+  findOne(@Param('id') id: string): Promise<BookDocument> {
+    return this.bookService.findOne(id);
+  }
+
+  // Altri metodi del servizio
+}
+```
+
 Successivamente ci basterà visitare l'endpoint ***http://localhost:3000/bookapi***
