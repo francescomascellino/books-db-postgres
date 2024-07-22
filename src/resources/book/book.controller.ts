@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -115,7 +116,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Ottiene un record dal Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da recuperare',
   })
@@ -128,7 +129,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Aggiorna un record dal Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da aggiornare',
   })
@@ -178,7 +179,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Recupera un record nel cestino del Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da recuperare',
   })
@@ -192,7 +193,7 @@ export class BookController {
     summary:
       'Elimina definitivamente un record nel cestino del Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da eliminare',
   })
@@ -205,7 +206,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Sposta un record nel cestino del Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da cestinare',
   })
@@ -218,7 +219,7 @@ export class BookController {
   @ApiOperation({
     summary: 'Ripristina un record dal cestino del Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da ripristinare',
   })
@@ -241,9 +242,9 @@ export class BookController {
     summary:
       'Elimina definitivamente più record nel cestino del Database tramite ID',
   })
-  @ApiQuery({
-    name: 'id',
-    description: 'ID dei record da eliminare',
+  @ApiBody({
+    type: DeleteMultipleBooksDto,
+    description: "Dati per l'eliminazione dei record",
   })
   removeMultiple(
     @Body() deleteMultipleBooksDto: DeleteMultipleBooksDto,

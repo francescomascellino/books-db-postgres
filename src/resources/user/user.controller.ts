@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiQuery,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -65,7 +65,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Ottiene un record dal Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da recuperare',
   })
@@ -87,7 +87,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Aggiorna un record dal Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da aggiornare',
   })
@@ -110,7 +110,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Elimina definitivamente un Utente dal Database tramite ID',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'id',
     description: 'ID del record da eliminare',
   })
@@ -131,7 +131,7 @@ export class UserController {
     summary:
       'Permette a un Admin di ottenere i dati di un Utente tramite Username',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'username',
     description: 'Username del record da eliminare',
   })
@@ -156,11 +156,11 @@ export class UserController {
   @ApiOperation({
     summary: 'Permette a un Utente di prendere in prestito un libro',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'userId',
     description: "ID dell'Utente che vuole prendere in prestitoil libro",
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'bookId',
     description: 'ID del libro da prendere in prestito',
   })
@@ -182,11 +182,11 @@ export class UserController {
   @ApiOperation({
     summary: 'Permette a un Utente di restituire un libro preso in prestito',
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'userId',
     description: "ID dell'Utente che vuole prendere restituire il libro",
   })
-  @ApiQuery({
+  @ApiParam({
     name: 'bookId',
     description: 'ID del libro da restituire',
   })
