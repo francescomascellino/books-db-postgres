@@ -2342,7 +2342,7 @@ psql -U [USERNAME] -d [DB NAME]
 ```
 e immettiamo la password
 
-il nostro terminale dovrebbe mostrare adesso la redice del database in cui siamo entrati con il comando -d
+il nostro terminale dovrebbe mostrare adesso la radice del database in cui siamo entrati con il comando -d
 ```bash
 [DB NAME]=#
 ```
@@ -2700,7 +2700,7 @@ Ogni utente può prendere in prestito molti libri, ma un libro può essere prest
 Questo viene rappresentato tramite la tabella di unione puser_pbook. Abbiamo una relazione uno-a-molti tra Utenti e prestiti e una relazione molti-a-uno tra libri e prestiti (I libri possono avere UN prestito).
 
 Quando Definiamo le entità, diventa necessario specificare queste relazioni e creare degli identificativi che ci permetteranno di interrogare il DB.
-***src\resources\postuser_postbook\entities\postuser_postbook.entity.ts***
+***src\resources\postuser_postbook\entities\postbook.entity.ts***
 ```ts
 import { PostuserPostbook } from 'src/resources/postuser_postbook/entities/postuser_postbook.entity';
 import {
@@ -2711,7 +2711,8 @@ import {
   OneToMany,
 } from 'typeorm';
 
-@Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
+@Entity('pbook') // Questo sarà il nome della tabella che verrà generata
+@Unique(['ISBN'])
 export class Postbook {
   @PrimaryGeneratedColumn()
   id: number;
@@ -2719,25 +2720,25 @@ export class Postbook {
   // ... Altre definizioni dei campi
 
   /**
-   * Relazione uno-a-molti con PostuserPostbook.
+   * Relazione uno-a-uno con PostuserPostbook.
    *
-   * Un libro può avere molti prestiti rappresentati da istanze di PostuserPostbook.
+   * Un libro può avere un solo prestito rappresentato da una singola istanza di PostuserPostbook.
    *
-   * Utilizziamo puserPbooks per rappresentare questa relazione:
-   * - puserPbooks è un array di istanze di PostuserPostbook associato a questo libro.
-   * - La decorazione @OneToMany ci permette di definire una relazione uno-a-molti, indicando che ogni istanza di Postbook
-   *   può avere molteplici istanze di PostuserPostbook.
+   * Utilizziamo puserPbook per rappresentare questa relazione:
+   * - puserPbook è un'istanza di PostuserPostbook associata a questo libro.
+   * - La decorazione @OneToOne ci permette di definire una relazione uno-a-uno, indicando che ogni istanza di Postbook
+   *   può avere una singola istanza di PostuserPostbook.
    * - () => PostuserPostbook specifica il tipo dell'entità di destinazione (PostuserPostbook).
    * - (puserPbook) => puserPbook.pbook specifica il campo in PostuserPostbook che fa riferimento a questo libro.
    *
    * Il nome "pbook" è stato scelto convenzionalmente per rappresentare questa relazione, non è legato a un nome obbligatorio dell'entità Postbook.
    * È buona prassi seguire le convenzioni per mantenere il codice comprensibile e consistente.
    *
-   * Questo campo ci permette di accedere a tutti i prestiti (PostuserPostbook) associati a questo libro.
+   * Questo campo ci permette di accedere al prestito (PostuserPostbook) associato a questo libro.
    */
   // 1 Postbook ha molti PostuserPostbook.
-  @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
-  puserPbooks: PostuserPostbook[];
+  @OneToOne(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
+  puserPbooks: PostuserPostbook;
 }
 ```
 
@@ -2833,7 +2834,7 @@ export class PostuserPostbook {
 }
 ```
 
-Usando metodi simi a questo possiamo accdere alle relazioni:
+Usando metodi simili a questo possiamo accdere alle relazioni:
 ```ts
 const relations = await this.postuserPostbookRepository.find({
       relations: ['pbook', 'puser'],

@@ -4,9 +4,9 @@ import {
   Column,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  OneToMany,
   Unique,
   CreateDateColumn,
+  OneToOne,
 } from 'typeorm';
 
 @Entity('pbook') // Questo sarà il nome dellatabella che verrà generata
@@ -38,22 +38,23 @@ export class Postbook {
   updated_at: Date;
 
   /**
-   * Relazione uno-a-molti con PostuserPostbook.
+   * Relazione uno-a-uno con PostuserPostbook.
    *
-   * Un libro può avere molti prestiti rappresentati da istanze di PostuserPostbook.
+   * Un libro può avere un solo prestito rappresentato da una singola istanza di PostuserPostbook.
    *
-   * Utilizziamo puserPbooks per rappresentare questa relazione:
-   * - puserPbooks è un array di istanze di PostuserPostbook associato a questo libro.
-   * - La decorazione @OneToMany ci permette di definire una relazione uno-a-molti, indicando che ogni istanza di Postbook
-   *   può avere molteplici istanze di PostuserPostbook.
+   * Utilizziamo puserPbook per rappresentare questa relazione:
+   * - puserPbook è un'istanza di PostuserPostbook associata a questo libro.
+   * - La decorazione @OneToOne ci permette di definire una relazione uno-a-uno, indicando che ogni istanza di Postbook
+   *   può avere una singola istanza di PostuserPostbook.
    * - () => PostuserPostbook specifica il tipo dell'entità di destinazione (PostuserPostbook).
    * - (puserPbook) => puserPbook.pbook specifica il campo in PostuserPostbook che fa riferimento a questo libro.
    *
    * Il nome "pbook" è stato scelto convenzionalmente per rappresentare questa relazione, non è legato a un nome obbligatorio dell'entità Postbook.
    * È buona prassi seguire le convenzioni per mantenere il codice comprensibile e consistente.
    *
-   * Questo campo ci permette di accedere a tutti i prestiti (PostuserPostbook) associati a questo libro.
+   * Questo campo ci permette di accedere al prestito (PostuserPostbook) associato a questo libro.
    */
-  @OneToMany(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
-  puserPbooks: PostuserPostbook[];
+  // 1 Postbook ha molti PostuserPostbook.
+  @OneToOne(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
+  puserPbooks: PostuserPostbook;
 }

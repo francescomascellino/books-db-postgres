@@ -11,7 +11,9 @@ describe('PostuserPostbookController', () => {
       providers: [PostuserPostbookService],
     }).compile();
 
-    controller = module.get<PostuserPostbookController>(PostuserPostbookController);
+    controller = module.get<PostuserPostbookController>(
+      PostuserPostbookController,
+    );
   });
 
   it('should be defined', () => {
