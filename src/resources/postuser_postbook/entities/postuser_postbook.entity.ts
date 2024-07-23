@@ -35,6 +35,7 @@ export class PostuserPostbook {
    *
    * Questo campo ci permette di accedere all'utente associato a questo prestito (PostuserPostbook).
    */
+  // puserPbooks è stato definito in postuser.entity.ts
   @ManyToOne(() => Postuser, (postuser) => postuser.puserPbooks)
   @JoinColumn({ name: 'puser_id' })
   puser: Postuser;
