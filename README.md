@@ -2738,7 +2738,7 @@ export class Postbook {
    */
   // 1 Postbook ha molti PostuserPostbook.
   @OneToOne(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
-  puserPbooks: PostuserPostbook;
+  puserPbook: PostuserPostbook;
 }
 ```
 
@@ -2829,7 +2829,7 @@ export class PostuserPostbook {
    *
    * Questo campo ci permette di accedere al libro associato a questo prestito (PostuserPostbook).
    */
-  @OneToOne(() => Postbook, (postbook) => postbook.puserPbooks)
+  @OneToOne(() => Postbook, (postbook) => postbook.puserPbook)
   @JoinColumn({ name: 'pbook_id' })
   pbook: Postbook;
 }
@@ -4552,3 +4552,85 @@ export class BookController {
 ```
 
 Successivamente ci basterà visitare l'endpoint ***http://localhost:3000/bookapi***
+
+## Middlewares
+
+I middleware sono funzioni che hanno accesso all'oggetto richiesta (request), all'oggetto risposta (response), e alla funzione next nel ciclo di richiesta-risposta dell'applicazione. Essi possono eseguire qualsiasi codice, modificare la richiesta e la risposta, terminare il ciclo di richiesta-risposta e chiamare il successivo middleware nella pila.
+
+I middleware possono essere utilizzati per diverse finalità, tra cui:
+
+- Logging: Registrare le richieste in arrivo per il debug e il monitoraggio.
+- Autenticazione: Verificare le credenziali dell'utente.
+- Parsing: Analizzare i corpi delle richieste (es. JSON, form).
+- Gestione degli errori: Gestire gli errori e inviare risposte adeguate.
+- Manipolazione delle risposte: Modificare le risposte prima che vengano inviate al client.
+
+Per creare una classe middleware è necessario Implementare l'interfaccia NestMiddleware e definire il metodo use.
+Nel modulo principale, bisogna implementare NestModule e utilizzare MiddlewareConsumer per applicare il middleware alle rotte desiderate.
+
+Esempio di middleware *"LoggerMiddleware"*
+Questo middleware si occupa semplicemente di loggare in console il body di una request
+
+creare il middleware
+***src\resources\middlewares\logger.middleware.ts***
+```ts
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+
+@Injectable()
+export class LoggerMiddleware implements NestMiddleware {
+
+  use(req: Request, res: Response, next: NextFunction) {
+
+    console.log('Request body:', req.body); // Logga il corpo della richiesta
+
+    next(); // Passa al prossimo middleware o al gestore della rotta
+  }
+}
+```
+
+Registrare il middleware in app.module nell'esportazione della classe *AppModule*
+```ts
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { LoggerMiddleware } from './resources/middlewares/logger.middleware'; // Importare il middleware
+
+@Module({
+  // Altre importazioni e configurazioni
+})
+
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware) // Applicare il middleware
+      .forRoutes('*'); // Specificare le rotte a cui applicarlo (in questo caso tutte)
+  }
+}
+```
+
+Applicare più middlewares
+```ts
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware, AuthMiddleware) // Applica entrambi i middleware
+      .forRoutes('*'); // Specifica le rotte a cui applicarli (in questo caso tutte)
+  }
+}
+```
+
+Applicare più middlewares per rotte divese
+```ts
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Applicazione di LoggerMiddleware a tutte le rotte
+    consumer
+      .apply(LoggerMiddleware)
+      .forRoutes('*');
+
+    // Applicazione di AuthMiddleware solo alle rotte che iniziano con /auth
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes('/auth/*');
+  }
+}
+```

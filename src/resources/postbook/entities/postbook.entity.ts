@@ -56,5 +56,5 @@ export class Postbook {
    */
   // 1 Postbook ha molti PostuserPostbook.
   @OneToOne(() => PostuserPostbook, (puserPbook) => puserPbook.pbook)
-  puserPbooks: PostuserPostbook;
+  puserPbook: PostuserPostbook;
 }

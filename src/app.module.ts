@@ -13,6 +13,7 @@ import { PostuserModule } from './resources/postuser/postuser.module';
 import { Postuser } from './resources/postuser/entities/postuser.entity';
 import { PostuserPostbookModule } from './resources/postuser_postbook/postuser_postbook.module';
 import { PostuserPostbook } from './resources/postuser_postbook/entities/postuser_postbook.entity';
+import { PostauthModule } from './resources/postauth/postauth.module';
 
 @Module({
   imports: [
@@ -58,8 +59,9 @@ import { PostuserPostbook } from './resources/postuser_postbook/entities/postuse
     UserModule,
     AuthModule,
     PostbookModule, // Modulo entity book in PostgreSQL
-    PostuserModule,
-    PostuserPostbookModule,
+    PostuserModule, // Modulo entity user in PostgreSQL
+    PostuserPostbookModule, // Modulo entity user - book in PostgreSQL
+    PostauthModule, // Modulo entity auth in PostgreSQL
   ],
   controllers: [AppController],
   providers: [AppService],

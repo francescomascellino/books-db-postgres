@@ -1,6 +1,8 @@
-import { Controller, Get, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Delete, Body, Post } from '@nestjs/common';
 import { PostuserService } from './postuser.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreatePostuserDto } from './dto/create-postuser.dto';
+import { Postuser } from './entities/postuser.entity';
 // import { CreatePostuserDto } from './dto/create-postuser.dto';
 // import { UpdatePostuserDto } from './dto/update-postuser.dto';
 
@@ -8,12 +10,20 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('User (PostgreSQL)') // Identificativo sezione per Swagger
 export class PostuserController {
   constructor(private readonly postuserService: PostuserService) {}
-  /* 
+
   @Post()
-  create(@Body() createPostuserDto: CreatePostuserDto) {
+  @ApiOperation({
+    summary: 'Crea un nuovo Utente nel DB PostgreSQL',
+  })
+  @ApiBody({
+    type: CreatePostuserDto,
+    description: 'Dati per la creazione del nuovo Utente',
+  })
+  create(@Body() createPostuserDto: CreatePostuserDto): Promise<Postuser> {
+    console.log('Creating a new User');
     return this.postuserService.create(createPostuserDto);
   }
- */
+
   @Get()
   findAll() {
     return this.postuserService.findAll();

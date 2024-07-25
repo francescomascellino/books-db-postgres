@@ -55,7 +55,7 @@ export class PostuserPostbook {
    *
    * Questo campo ci permette di accedere al libro associato a questo prestito (PostuserPostbook).
    */
-  @OneToOne(() => Postbook, (postbook) => postbook.puserPbooks)
+  @OneToOne(() => Postbook, (postbook) => postbook.puserPbook)
   @JoinColumn({ name: 'pbook_id' })
   pbook: Postbook;
 }
