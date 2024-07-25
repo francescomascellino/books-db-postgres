@@ -4,7 +4,7 @@ import { PostauthController } from './postauth.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { PostJwtStrategy } from '../auth/strategies/postJwt.strategy';
+import { PostJwtStrategy } from '../strategies/postJwt.strategy';
 import { PostuserModule } from '../postuser/postuser.module';
 
 @Module({
@@ -24,4 +24,4 @@ import { PostuserModule } from '../postuser/postuser.module';
   providers: [PostauthService, PostJwtStrategy],
   exports: [PostauthService],
 })
-export class PostauthModule {}
+export class PostauthModule { }

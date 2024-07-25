@@ -16,7 +16,7 @@ import { DeleteMultipleBooksDto } from './dto/delete-multiple-books.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { UpdateMultipleBooksDto } from './dto/update-multiple-books.dto';
 import { BookDocument } from './schemas/book.schema';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { PaginateResult } from 'mongoose';
 import {
   ApiBearerAuth,
@@ -31,7 +31,7 @@ import {
 @ApiTags('Book (MongoDB)') // Identificativo sezione per Swagger
 @ApiBearerAuth('Authorization') // Nome dello schema di sicurezza per Swagger
 export class BookController {
-  constructor(private readonly bookService: BookService) {}
+  constructor(private readonly bookService: BookService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()

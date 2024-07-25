@@ -13,7 +13,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDocument } from './schemas/user.schema';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -36,7 +36,7 @@ export interface ExtendedRequest extends Request {
 @ApiTags('User (MongoDB)') // Identificativo sezione per Swagger
 @ApiBearerAuth('Authorization') // Nome dello schema di sicurezza per Swagger
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Post()
   @ApiOperation({
