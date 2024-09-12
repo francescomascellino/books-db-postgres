@@ -58,3 +58,4 @@ JWTGUIDE.md
 JWTGUIDE.pdf
 README.pdf
 src/resources/postuser_postbook/entities/postuser_postbook.entity copy.ts
+src/resources/scripts/update-postgre-pwd.ts
