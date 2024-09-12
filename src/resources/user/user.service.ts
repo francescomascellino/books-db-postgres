@@ -149,6 +149,16 @@ export class UserService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
+    const { username } = createUserDto;
+    const existingUser = await this.userModel.findOne({ username }).exec();
+
+    if (existingUser) {
+      console.log(
+        `Error: Failed to create the new user. ${username} already exists`,
+      );
+      throw new ConflictException(`Username ${username} already exists.`);
+    }
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
 

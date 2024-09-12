@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Postuser } from './entities/postuser.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,6 +22,19 @@ export class PostuserService {
   ) {}
 
   async create(createPostuserDto: CreatePostuserDto): Promise<Postuser> {
+    const { username } = createPostuserDto;
+
+    const existingUser = await this.postuserRepository.findOne({
+      where: { username },
+    });
+
+    if (existingUser) {
+      console.log(
+        `Error: Failed to create the new user. ${username} already exists`,
+      );
+      throw new ConflictException(`Username ${username} already exists.`);
+    }
+
     const salt = await bcrypt.genSalt();
 
     const hashedPassword = await bcrypt.hash(createPostuserDto.password, salt);
@@ -30,8 +47,8 @@ export class PostuserService {
     try {
       await this.postuserRepository.save(createdUser);
     } catch (error) {
-      console.log(`Error: Failed to create the book.`);
-      throw new InternalServerErrorException('Failed to create the book.');
+      console.log(`Error: Failed to create the new user.`);
+      throw new InternalServerErrorException('Failed to create the new user.');
     }
 
     console.log(`New User Created!`, createdUser);
